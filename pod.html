@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Beyond's TMS — Trip Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0f;--bg1:#0f0f17;--bg2:#141420;--bg3:#1a1a2a;
+  --border:#252535;--border2:#2e2e42;
+  --txt:#e8e8f0;--txt2:#8888aa;--txt3:#555570;
+  --accent:#5865f2;--accent2:#7983f5;--ag:linear-gradient(135deg,#5865f2,#7c3aed);
+  --green:#22c55e;--gbg:rgba(34,197,94,.08);--gbdr:rgba(34,197,94,.25);
+  --amber:#f59e0b;--abg:rgba(245,158,11,.08);--abdr:rgba(245,158,11,.25);
+  --red:#ef4444;--rbg:rgba(239,68,68,.08);--rbdr:rgba(239,68,68,.25);
+  --r:10px;--r2:14px;--sh:0 2px 16px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* TOPBAR */
+.topbar{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 16px;height:54px;display:flex;align-items:center;gap:11px;position:sticky;top:0;z-index:50}
+.t-logo{width:30px;height:30px;background:var(--ag);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.t-brand{font-size:13.5px;font-weight:700;letter-spacing:-.2px}
+.t-sub{font-size:9px;color:var(--txt3);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.t-id{margin-left:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 9px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent2)}
+
+/* BODY */
+.body{padding:14px 14px 90px;max-width:480px;margin:0 auto}
+
+/* STEPPER */
+.stepper-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:13px 14px;margin-bottom:16px}
+.stepper{display:flex;align-items:center}
+.sd{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;transition:all .3s;font-family:'JetBrains Mono',monospace}
+.sd.done{background:var(--green);color:#000;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.sd.active{background:var(--ag);color:#fff;box-shadow:0 0 0 3px rgba(88,101,242,.2)}
+.sd.pend{background:var(--bg2);color:var(--txt3);border:1px solid var(--border2)}
+.sl{flex:1;height:1px;background:var(--border2);transition:background .3s}
+.sl.done{background:var(--green)}
+.step-labels{display:flex;justify-content:space-between;margin-top:7px}
+.sl-item{font-size:8px;color:var(--txt3);text-align:center;width:24px;line-height:1.3;text-transform:uppercase;letter-spacing:.3px}
+.sl-item.active{color:var(--accent2);font-weight:700}
+.sl-item.done{color:var(--green)}
+
+/* CARD */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+.card-head{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.step-chip{background:var(--ag);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.step-title{font-size:14.5px;font-weight:600}
+
+/* INFO TABLE */
+.info-tbl{width:100%;border-collapse:collapse}
+.info-tbl tr{border-bottom:1px solid var(--border)}
+.info-tbl tr:last-child{border-bottom:none}
+.info-tbl td{padding:7px 0;font-size:12.5px;vertical-align:top}
+.info-tbl .ik{color:var(--txt3);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;width:36%;padding-right:8px;padding-top:9px}
+.info-tbl .iv{color:var(--txt);font-weight:500;line-height:1.4}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fg label{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px}
+.req{color:var(--red)}
+.fg input,.fg select,.fg textarea{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:11px 12px;font-family:'Inter',sans-serif;font-size:14px;color:var(--txt);outline:none;transition:border .2s;width:100%;-webkit-appearance:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);background:var(--bg3)}
+.fg textarea{resize:none}
+.fg input::placeholder{color:var(--txt3)}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:14px;border-radius:var(--r);border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;transition:all .2s;-webkit-appearance:none;letter-spacing:-.1px}
+.btn:active{transform:scale(.97)}
+.bp{background:var(--ag);color:#fff;box-shadow:0 4px 16px rgba(88,101,242,.25)}
+.bg{background:var(--gbg);color:var(--green);border:1px solid var(--gbdr)}
+.bgh{background:var(--bg2);color:var(--txt2);border:1px solid var(--border2)}
+.bclose{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.2)}
+.bsm{padding:7px 12px;font-size:11px;border-radius:7px;width:auto;display:inline-flex}
+
+/* MANDATORY BADGE */
+.mandatory-tag{display:inline-flex;align-items:center;gap:3px;background:var(--rbg);border:1px solid var(--rbdr);color:var(--red);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;margin-left:6px}
+
+/* PHOTO UPLOAD */
+.pu-area{border:1.5px dashed var(--border2);border-radius:var(--r2);padding:22px 14px;text-align:center;cursor:pointer;background:var(--bg2);transition:all .2s;display:block}
+.pu-area:active{border-color:var(--accent);background:var(--bg3)}
+.pu-icon{font-size:30px;margin-bottom:7px;line-height:1}
+.pu-text{font-size:13px;font-weight:600;margin-bottom:2px}
+.pu-sub{font-size:11px;color:var(--txt3)}
+
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.photo-wrap{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-wrap .rm{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer}
+
+/* MANDATORY CHECK MARK */
+.photo-done{display:flex;align-items:center;gap:6px;background:var(--gbg);border:1px solid var(--gbdr);border-radius:var(--r);padding:9px 13px;font-size:12px;font-weight:600;color:var(--green);margin-top:10px}
+
+/* OTP */
+.otp-box{background:var(--bg2);border:1px solid var(--abdr);border-radius:var(--r2);padding:18px;text-align:center}
+.otp-digits{font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:700;color:var(--amber);letter-spacing:10px;line-height:1}
+.otp-hint{font-size:11px;color:var(--txt3);margin-top:7px}
+.otp-field{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;text-align:center;letter-spacing:8px;padding:13px}
+
+/* SIGNATURE */
+#sig-canvas{width:100%;height:140px;display:block;border:1.5px dashed var(--border2);border-radius:var(--r);background:var(--bg2);touch-action:none;cursor:crosshair}
+#sig-canvas.signed{border-color:var(--gbdr);background:var(--bg3)}
+
+/* NOTICES */
+.notice{border-radius:var(--r);padding:10px 13px;font-size:12px;display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;line-height:1.5}
+.notice.am{background:var(--abg);border:1px solid var(--abdr);color:var(--amber)}
+.notice.gn{background:var(--gbg);border:1px solid var(--gbdr);color:var(--green)}
+.notice.rd{background:var(--rbg);border:1px solid var(--rbdr);color:var(--red)}
+.notice-ico{flex-shrink:0}
+.notice-body{color:var(--txt2)}
+.notice.rd .notice-body{color:var(--txt)}
+
+/* GPS ROW */
+.gps-row{display:flex;gap:7px;align-items:center}
+.gps-row input{flex:1;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--txt3)}
+
+/* SUMMARY */
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.sum-row:last-child{border-bottom:none}
+.sum-k{color:var(--txt3);font-size:9px;text-transform:uppercase;letter-spacing:.6px}
+.sum-v{color:var(--txt);font-weight:500;text-align:right;max-width:60%}
+
+/* SUCCESS */
+.success-wrap{text-align:center;padding:28px 8px}
+.s-ico{width:80px;height:80px;background:var(--gbg);border:1px solid var(--gbdr);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 18px;box-shadow:0 0 36px rgba(34,197,94,.12)}
+.s-title{font-size:22px;font-weight:700;margin-bottom:7px;letter-spacing:-.3px}
+.s-sub{font-size:13px;color:var(--txt2);margin-bottom:26px;line-height:1.6}
+
+/* EXPIRED / ERROR */
+.exp-screen{text-align:center;padding:60px 20px}
+.exp-ico{font-size:52px;margin-bottom:16px}
+.exp-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.exp-sub{font-size:13px;color:var(--txt3);line-height:1.6}
+
+/* LOADING */
+.load-screen{text-align:center;padding:80px 20px}
+.spinner{width:36px;height:36px;border:2.5px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg2);border:1px solid var(--border2);color:var(--txt);padding:9px 16px;border-radius:24px;font-size:12.5px;z-index:999;transition:all .25s;white-space:nowrap;box-shadow:var(--sh);opacity:0}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{border-color:var(--gbdr);color:var(--green)}
+#toast.err{border-color:var(--rbdr);color:var(--red)}
+
+/* INV UPLOAD */
+.inv-area{background:var(--bg2);border:1.5px dashed rgba(88,101,242,.35);border-radius:var(--r2);padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;display:block}
+.inv-area:active{border-color:var(--accent);background:var(--bg3)}
+.inv-preview{width:100%;border-radius:var(--r);border:1px solid var(--border2);margin-top:10px;max-height:220px;object-fit:contain;background:var(--bg2)}
+
+@media(min-width:500px){.body{padding:18px 18px 100px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="t-logo">⬡</div>
+  <div><div class="t-brand">Beyond's TMS</div><div class="t-sub">Rider Portal</div></div>
+  <div class="t-id" id="trip-id-badge">—</div>
+</div>
+
+<div class="body" id="app-body">
+  <!-- Loading state -->
+  <div id="loading-screen" class="card">
+    <div class="load-screen">
+      <div class="spinner"></div>
+      <div style="font-size:13px;color:var(--txt2)">Loading your trip…</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════ GLOBALS ══════════
+const JBIN = 'https://api.jsonbin.io/v3';
+let BIN_ID = '';
+let TRIP = null;
+let POD = { pickupPhotos:[], deliveryPhotos:[], invoicePhoto:'', invoiceUploaded:false, receiver:'', recPhone:'', remarks:'', location:'', otpVerified:false, signature:'', startedAt:'', startLocation:'' };
+let currentStep = 0;
+let sigCtx=null, sigDrawing=false, hasSig=false;
+
+// ══════════ BOOT ══════════
+window.addEventListener('DOMContentLoaded', boot);
+
+async function boot() {
+  const params = new URLSearchParams(window.location.search);
+  BIN_ID = params.get('bin');
+  if (!BIN_ID) { showExpired('Invalid Link','No trip data found in this link. Ask dispatch to resend.'); return; }
+
+  try {
+    TRIP = await jbRead(BIN_ID);
+  } catch(e) {
+    showExpired('Could not Load Trip','Failed to fetch trip data. Check your internet connection and try again.');
+    return;
+  }
+
+  // LINK EXPIRY CHECK
+  if (TRIP.status === 'Closed') {
+    showExpired('Trip Already Closed','This trip has been completed and the link has expired. Contact dispatch if you need assistance.',true);
+    return;
+  }
+
+  document.getElementById('trip-id-badge').textContent = TRIP.id;
+  buildRiderUI();
+}
+
+// ══════════ JSONBIN ══════════
+async function jbRead(binId) {
+  const res = await fetch(`${JBIN}/b/${binId}/latest`, {
+    headers: { 'X-Access-Key': '' } // public bin — no key needed for read
+  });
+  if (!res.ok) throw new Error('Read failed '+res.status);
+  return (await res.json()).record;
+}
+
+// For writing we need the key — stored in the URL as a second param by admin
+async function jbUpdate(data) {
+  const params = new URLSearchParams(window.location.search);
+  const key = params.get('k');
+  if (!key) throw new Error('No write key. Ask dispatch to regenerate the link.');
+  const res = await fetch(`${JBIN}/b/${BIN_ID}`, {
+    method: 'PUT',
+    headers: { 'Content-Type':'application/json', 'X-Master-Key': key },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Update failed '+res.status);
+}
+
+// ══════════ EXPIRED SCREEN ══════════
+function showExpired(title, sub, isClosed=false) {
+  const body = document.getElementById('app-body');
+  body.innerHTML = `
+    <div class="card" style="margin-top:16px">
+      <div class="exp-screen">
+        <div class="exp-ico">${isClosed?'🔒':'❌'}</div>
+        <div class="exp-title">${title}</div>
+        <div class="exp-sub">${sub}</div>
+        ${isClosed?`<div class="notice gn" style="margin-top:24px;text-align:left"><span class="notice-ico">✓</span><div class="notice-body">Trip is marked as <b>Delivered & Closed</b>. POD has been captured and saved to admin portal.</div></div>`:''}
+      </div>
+    </div>`;
+}
+
+// ══════════ BUILD UI ══════════
+function buildRiderUI() {
+  const body = document.getElementById('app-body');
+  body.innerHTML = `
+    <!-- STEPPER -->
+    <div class="stepper-wrap" id="stepper-wrap">
+      <div class="stepper">
+        <div class="sd active" id="sd0">1</div><div class="sl" id="sl01"></div>
+        <div class="sd pend" id="sd1">2</div><div class="sl" id="sl12"></div>
+        <div class="sd pend" id="sd2">3</div><div class="sl" id="sl23"></div>
+        <div class="sd pend" id="sd3">4</div><div class="sl" id="sl34"></div>
+        <div class="sd pend" id="sd4">5</div><div class="sl" id="sl45"></div>
+        <div class="sd pend" id="sd5">6</div><div class="sl" id="sl56"></div>
+        <div class="sd pend" id="sd6">✓</div>
+      </div>
+      <div class="step-labels">
+        <div class="sl-item active" id="lbl0">Info</div>
+        <div class="sl-item pend" id="lbl1">Pickup</div>
+        <div class="sl-item pend" id="lbl2">Deliver</div>
+        <div class="sl-item pend" id="lbl3">Invoice</div>
+        <div class="sl-item pend" id="lbl4">Receiver</div>
+        <div class="sl-item pend" id="lbl5">OTP</div>
+        <div class="sl-item pend" id="lbl6">Sign</div>
+      </div>
+    </div>
+
+    <!-- STEP 0: Trip Info + Start -->
+    <div id="step-0">
+      <div class="card">
+        <div class="card-head"><div class="step-chip">1</div><div class="step-title">Your Trip</div></div>
+        <table class="info-tbl" id="trip-tbl"></table>
+      </div>
+      <div class="notice am" id="geo-notice">
+        <span class="notice-ico">📍</span>
+        <div class="notice-body">Capturing start location… <span id="geo-txt" style="color:var(--amber)">Allow GPS access</span></div>
+      </div>
+      <button class="btn bp" id="start-btn" onclick="startTrip()" disabled style="opacity:.5">🚀 Start Trip</button>
+    </div>
+
+    <!-- STEP 1: Pickup Photos -->
+    <div id="step-1" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="step-chip">2</div><div class="step-title">Pickup Photos</div></div>
+        <div class="notice am"><span class="notice-ico">📍</span><div class="notice-body">At pickup location — photograph goods, boxes, loading state, quantity labels</div></div>
+        <label class="pu-area" for="pu-inp">
+          <div class="pu-icon">📷</div>
+          <div class="pu-text">Tap to capture photos</div>
+          <div class="pu-sub">Goods condition & quantity at pickup</div>
+          <input type="file" id="pu-inp" multiple accept="image/*" capture="environment" style="display:none" onchange="addPhotos(this,'pu-grid','pickupPhotos','pu-done')">
+        </label>
+        <div class="photo-grid" id="pu-grid"></div>
+        <div id="pu-done" style="display:none" class="photo-done">✓ <span id="pu-count-txt">0 photos uploaded</span></div>
+      </div>
+      <button class="btn bp" onclick="goStep(2)">Next: Delivery Photos →</button>
+    </div>
+
+    <!-- STEP 2: Delivery Photos (MANDATORY) -->
+    <div id="step-2" style="display:none">
+      <div class="card">
+        <div class="card-head">
+          <div class="step-chip">3</div>
+          <div class="step-title">Delivery Photos <span class="mandatory-tag">★ Required</span></div>
+        </div>
+        <div class="notice rd"><span class="notice-ico">⚠</span><div class="notice-body"><b>Mandatory:</b> At least 1 delivery photo required. Cannot close trip without it.</div></div>
+        <label class="pu-area" for="del-inp">
+          <div class="pu-icon">📦</div>
+          <div class="pu-text">Capture delivery photos</div>
+          <div class="pu-sub">Unloaded goods, delivery location</div>
+          <input type="file" id="del-inp" multiple accept="image/*" capture="environment" style="display:none" onchange="addPhotos(this,'del-grid','deliveryPhotos','del-done')">
+        </label>
+        <div class="photo-grid" id="del-grid"></div>
+        <div id="del-done" style="display:none" class="photo-done">✓ <span id="del-count-txt">0 photos uploaded</span></div>
+      </div>
+      <button class="btn bp" onclick="checkDelPhotosThenNext()">Next: Invoice Copy →</button>
+    </div>
+
+    <!-- STEP 3: Stamped Invoice (MANDATORY) -->
+    <div id="step-3" style="display:none">
+      <div class="card">
+        <div class="card-head">
+          <div class="step-chip">4</div>
+          <div class="step-title">Invoice Copy <span class="mandatory-tag">★ Required</span></div>
+        </div>
+        <div class="notice rd"><span class="notice-ico">🧾</span><div class="notice-body"><b>Mandatory:</b> Upload clear photo of the physical invoice with <b>received stamp</b> and <b>customer signature</b>. Cannot close trip without it.</div></div>
+        <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:11px 13px;margin-bottom:13px">
+          <div style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Invoice Reference</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div><div style="font-size:9px;color:var(--txt3)">Invoice No.</div><div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--accent2)">${TRIP.inv||'Not specified'}</div></div>
+            <div><div style="font-size:9px;color:var(--txt3)">Invoice Date</div><div style="font-size:13px;font-weight:600;color:var(--txt)">${TRIP.invDt?new Date(TRIP.invDt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'Not specified'}</div></div>
+          </div>
+        </div>
+        <label class="inv-area" for="inv-inp">
+          <div style="font-size:30px;margin-bottom:7px">🧾</div>
+          <div class="pu-text">Photograph the invoice</div>
+          <div class="pu-sub">Must show stamp + receiver signature clearly</div>
+          <input type="file" id="inv-inp" accept="image/*" capture="environment" style="display:none" onchange="handleInvPhoto(this)">
+        </label>
+        <img id="inv-prev" class="inv-preview" style="display:none" src="">
+        <div id="inv-done" style="display:none;margin-top:8px" class="photo-done">✓ Invoice photo uploaded</div>
+      </div>
+      <button class="btn bp" onclick="checkInvThenNext()">Next: Receiver Info →</button>
+    </div>
+
+    <!-- STEP 4: Receiver Info -->
+    <div id="step-4" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="step-chip">5</div><div class="step-title">Receiver Details</div></div>
+        <div class="fg"><label>Receiver Full Name <span class="req">*</span></label><input id="rec-name" placeholder="Name of person accepting goods" autocomplete="name"></div>
+        <div class="fg"><label>Receiver Phone <span class="req">*</span></label><input id="rec-phone" type="tel" placeholder="+91 XXXXXXXXXX" autocomplete="tel"></div>
+        <div class="fg"><label>Delivery Remarks</label><textarea id="rec-remarks" rows="2" placeholder="Goods received in good condition…"></textarea></div>
+        <div class="fg">
+          <label>GPS Location</label>
+          <div class="gps-row">
+            <input id="rec-gps" placeholder="Tap to capture GPS" readonly>
+            <button class="btn bgh bsm" onclick="captureGPS()" style="flex-shrink:0;white-space:nowrap">📍 GPS</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn bp" onclick="goStep5()">Next: OTP Verification →</button>
+    </div>
+
+    <!-- STEP 5: OTP -->
+    <div id="step-5" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="step-chip">6</div><div class="step-title">OTP Verification</div></div>
+        <div class="notice am"><span class="notice-ico">🔢</span><div class="notice-body"><b>Show this screen to the customer.</b> Ask them to read back the 6-digit OTP to confirm delivery.</div></div>
+        <div class="otp-box">
+          <div class="otp-digits">${TRIP.otp}</div>
+          <div class="otp-hint">↑ Show to receiver — they read this aloud ↑</div>
+        </div>
+        <div style="margin-top:16px" class="fg">
+          <label>Enter OTP spoken by receiver</label>
+          <input id="otp-inp" class="otp-field" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="______" oninput="checkOTP()">
+        </div>
+        <div id="otp-msg" style="min-height:22px;text-align:center;font-size:13px;font-weight:600;margin-top:5px"></div>
+      </div>
+    </div>
+
+    <!-- STEP 6: Signature + Close -->
+    <div id="step-6" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="step-chip">7</div><div class="step-title">Receiver Signature</div></div>
+        <div class="notice am"><span class="notice-ico">✍️</span><div class="notice-body">Hand phone to receiver to sign in the box below with finger.</div></div>
+        <canvas id="sig-canvas"></canvas>
+        <div style="display:flex;gap:7px;margin-top:9px;align-items:center">
+          <button class="btn bgh bsm" onclick="clearSig()">🗑 Clear</button>
+          <span style="font-size:10px;color:var(--txt3);margin-left:auto" id="sig-status">Not signed</span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:11px">POD Summary</div>
+        <div id="summary-rows"></div>
+      </div>
+      <button class="btn bclose" id="close-btn" onclick="closeTrip()">✅ Close Trip & Generate POD</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="step-success" style="display:none">
+      <div class="card">
+        <div class="success-wrap">
+          <div class="s-ico">✅</div>
+          <div class="s-title">Trip Closed!</div>
+          <div class="s-sub">POD saved to admin portal.<br>Download your copies below.</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px">
+            <button class="btn bp" onclick="downloadPDF('customer')">📄 Customer Copy (PDF)</button>
+            <button class="btn bgh" onclick="downloadPDF('company')">📄 Company Copy (PDF)</button>
+          </div>
+          <div class="notice gn"><span class="notice-ico">⬡</span><div class="notice-body">Trip <b id="done-id"></b> is marked Delivered. Link is now expired.</div></div>
+        </div>
+      </div>
+    </div>`;
+
+  // Populate trip info
+  const t = TRIP;
+  const rows=[['Trip ID',t.id],['Customer',t.cust],['Goods',t.goods||'—'],['Weight',t.wt||'—'],['Value',t.val?'₹'+t.val:'—'],['Pickup',t.pu],['Delivery',t.del],['Invoice',t.inv||'—'],['Vehicle',(t.vno||'—')+' · '+t.vt],['Date',t.dt||'—']];
+  document.getElementById('trip-tbl').innerHTML = rows.map(([k,v])=>`<tr><td class="ik">${k}</td><td class="iv">${v}</td></tr>`).join('');
+  if (t.notes) {
+    document.getElementById('trip-tbl').insertAdjacentHTML('afterend',`
+      <div class="notice am" style="margin-top:10px"><span class="notice-ico">📝</span><div class="notice-body"><b>Notes:</b> ${t.notes}</div></div>`);
+  }
+
+  // Init GPS + sig
+  getGPS();
+  setTimeout(initSig, 300);
+}
+
+// ══════════ GPS ══════════
+function getGPS() {
+  if (!navigator.geolocation) { enableStart('GPS unavailable'); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const loc=pos.coords.latitude.toFixed(5)+','+pos.coords.longitude.toFixed(5);
+    POD.startLocation=loc;
+    const el=document.getElementById('geo-txt');
+    if(el){el.textContent='Location confirmed ✓';el.style.color='var(--green)';}
+    enableStart();
+  },()=>enableStart('Location skipped'),{timeout:8000,enableHighAccuracy:true});
+}
+
+function captureGPS() {
+  if (!navigator.geolocation) {toast('GPS not available','err');return;}
+  toast('Capturing GPS…');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const loc=pos.coords.latitude.toFixed(5)+','+pos.coords.longitude.toFixed(5);
+    document.getElementById('rec-gps').value=loc;
+    POD.location=loc;
+    toast('Location captured','ok');
+  },()=>toast('Could not get location','err'),{timeout:8000,enableHighAccuracy:true});
+}
+
+function enableStart(msg) {
+  const btn=document.getElementById('start-btn');
+  if(btn){btn.disabled=false;btn.style.opacity='1';}
+  if(msg){const el=document.getElementById('geo-txt');if(el) el.textContent=msg;}
+}
+
+// ══════════ STEPPER ══════════
+function updateStepper(active) {
+  const labels=['Info','Pickup','Deliver','Invoice','Receiver','OTP','Sign'];
+  for(let i=0;i<=6;i++){
+    const dot=document.getElementById('sd'+i);
+    const lbl=document.getElementById('lbl'+i);
+    if(!dot||!lbl) continue;
+    dot.className='sd '+(i<active?'done':i===active?'active':'pend');
+    lbl.className='sl-item '+(i<active?'done':i===active?'active':'pend');
+    if(i>0){const sl=document.getElementById('sl'+(i-1)+i);if(sl) sl.className='sl'+(i<=active?' done':'');}
+  }
+}
+
+function goStep(n) {
+  const cur=document.getElementById('step-'+currentStep);
+  const nxt=document.getElementById('step-'+n);
+  if(cur) cur.style.display='none';
+  if(nxt) nxt.style.display='';
+  updateStepper(n);
+  currentStep=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════ START ══════════
+function startTrip() {
+  POD.startedAt=new Date().toLocaleString('en-IN');
+  goStep(1);
+  toast('Trip started!','ok');
+}
+
+// ══════════ PHOTOS ══════════
+function addPhotos(input, gridId, podKey, doneId) {
+  Array.from(input.files).forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const max=1100;let w=img.width,h=img.height;
+        if(w>max||h>max){const r=Math.min(max/w,max/h);w*=r;h*=r;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const compressed=canvas.toDataURL('image/jpeg',.72);
+        POD[podKey].push(compressed);
+        updatePhotoDone(doneId, POD[podKey].length, podKey);
+        addThumb(gridId, compressed, POD[podKey].length-1, podKey, doneId);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+  input.value='';
+}
+
+function addThumb(gridId, src, idx, podKey, doneId) {
+  const grid=document.getElementById(gridId); if(!grid) return;
+  const wrap=document.createElement('div'); wrap.className='photo-wrap';
+  const img=document.createElement('img'); img.src=src;
+  const rm=document.createElement('button'); rm.className='rm'; rm.textContent='×';
+  rm.onclick=e=>{e.stopPropagation();POD[podKey].splice(idx,1);wrap.remove();updatePhotoDone(doneId,POD[podKey].length,podKey);};
+  wrap.appendChild(img); wrap.appendChild(rm); grid.appendChild(wrap);
+}
+
+function updatePhotoDone(doneId, count, podKey) {
+  const el=document.getElementById(doneId); if(!el) return;
+  el.style.display=count>0?'flex':'none';
+  const label=podKey==='pickupPhotos'?'pu-count-txt':'del-count-txt';
+  const lel=document.getElementById(label);
+  if(lel) lel.textContent=count+' photo'+(count>1?'s':'')+' uploaded';
+}
+
+function checkDelPhotosThenNext() {
+  if(POD.deliveryPhotos.length===0){toast('Upload at least 1 delivery photo — it is mandatory','err');return;}
+  goStep(3);
+}
+
+// ══════════ INVOICE PHOTO ══════════
+function handleInvPhoto(input) {
+  const f=input.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const max=1600;let w=img.width,h=img.height;
+      if(w>max||h>max){const r=Math.min(max/w,max/h);w*=r;h*=r;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      POD.invoicePhoto=canvas.toDataURL('image/jpeg',.8);
+      POD.invoiceUploaded=true;
+      const prev=document.getElementById('inv-prev');
+      if(prev){prev.src=POD.invoicePhoto;prev.style.display='block';}
+      const done=document.getElementById('inv-done');
+      if(done) done.style.display='flex';
+      toast('Invoice photo saved','ok');
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);
+  input.value='';
+}
+
+function checkInvThenNext() {
+  if(!POD.invoicePhoto){toast('Upload the stamped invoice copy — it is mandatory','err');return;}
+  goStep(4);
+}
+
+// ══════════ RECEIVER ══════════
+function goStep5() {
+  const name=document.getElementById('rec-name')?.value.trim();
+  const phone=document.getElementById('rec-phone')?.value.trim();
+  if(!name){toast('Enter receiver name','err');return;}
+  if(!phone){toast('Enter receiver phone','err');return;}
+  POD.receiver=name; POD.recPhone=phone;
+  POD.remarks=document.getElementById('rec-remarks')?.value.trim()||'';
+  POD.location=document.getElementById('rec-gps')?.value||POD.location||'';
+  renderSummary();
+  goStep(5);
+}
+
+// ══════════ OTP ══════════
+function checkOTP() {
+  const val=document.getElementById('otp-inp')?.value.trim();
+  const msg=document.getElementById('otp-msg');
+  if(!val||val.length<6){if(msg)msg.textContent='';return;}
+  if(val===String(TRIP.otp)){
+    if(msg)msg.innerHTML='<span style="color:var(--green)">✅ OTP Verified! Proceeding…</span>';
+    POD.otpVerified=true;
+    setTimeout(()=>goStep(6),900);
+  }else{
+    if(msg)msg.innerHTML='<span style="color:var(--red)">❌ Incorrect OTP — try again</span>';
+    POD.otpVerified=false;
+  }
+}
+
+// ══════════ SIGNATURE ══════════
+function initSig() {
+  const canvas=document.getElementById('sig-canvas'); if(!canvas) return;
+  canvas.width=canvas.offsetWidth||360; canvas.height=140;
+  sigCtx=canvas.getContext('2d');
+  sigCtx.strokeStyle='#e8e8f0'; sigCtx.lineWidth=2.5; sigCtx.lineCap='round'; sigCtx.lineJoin='round';
+
+  const pos=e=>{
+    const r=canvas.getBoundingClientRect(),sx=canvas.width/r.width,sy=canvas.height/r.height;
+    if(e.touches) return{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy};
+    return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};
+  };
+  canvas.onmousedown=e=>{sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
+  canvas.onmousemove=e=>{if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};
+  canvas.onmouseup=()=>sigDrawing=false;
+  canvas.ontouchstart=e=>{e.preventDefault();sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
+  canvas.ontouchmove=e=>{e.preventDefault();if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};
+  canvas.ontouchend=()=>sigDrawing=false;
+}
+
+function markSig() {
+  hasSig=true;
+  canvas=document.getElementById('sig-canvas');
+  if(canvas) canvas.classList.add('signed');
+  const s=document.getElementById('sig-status');
+  if(s) s.innerHTML='<span style="color:var(--green)">✓ Signed</span>';
+}
+
+function clearSig() {
+  const canvas=document.getElementById('sig-canvas'); if(!canvas) return;
+  sigCtx?.clearRect(0,0,canvas.width,canvas.height);
+  canvas.classList.remove('signed');
+  hasSig=false;
+  const s=document.getElementById('sig-status'); if(s) s.textContent='Not signed';
+}
+
+// ══════════ SUMMARY ══════════
+function renderSummary() {
+  const rows=[
+    ['Receiver',POD.receiver],['Phone',POD.recPhone],
+    ['Pickup Photos',POD.pickupPhotos.length+' uploaded'],
+    ['Delivery Photos',POD.deliveryPhotos.length+' uploaded'],
+    ['Invoice Copy',POD.invoiceUploaded?'✓ Uploaded':'Not uploaded'],
+    ['OTP',POD.otpVerified?'✓ Verified':'Pending'],
+    ['Remarks',POD.remarks||'None'],['GPS',POD.location||'Not captured'],
+  ];
+  const el=document.getElementById('summary-rows');
+  if(el) el.innerHTML=rows.map(([k,v])=>`
+    <div class="sum-row"><div class="sum-k">${k}</div><div class="sum-v">${v}</div></div>`).join('');
+}
+
+// ══════════ CLOSE TRIP ══════════
+async function closeTrip() {
+  // Final validation
+  if(POD.deliveryPhotos.length===0){toast('Delivery photos are mandatory','err');return;}
+  if(!POD.invoicePhoto){toast('Invoice copy is mandatory','err');return;}
+  if(!hasSig){toast('Get receiver signature first','err');return;}
+
+  const canvas=document.getElementById('sig-canvas');
+  POD.signature=canvas?canvas.toDataURL('image/png'):'';
+  POD.completedAt=new Date().toLocaleString('en-IN');
+
+  const updatedTrip = { ...TRIP, status:'Closed', pod:{ ...POD } };
+
+  // Show loading
+  const closeBtn=document.getElementById('close-btn');
+  if(closeBtn){closeBtn.disabled=true;closeBtn.textContent='Saving to cloud…';}
+
+  try {
+    await jbUpdate(updatedTrip);
+    TRIP = updatedTrip;
+    toast('POD saved to admin portal!','ok');
+  } catch(e) {
+    // Save to localStorage as fallback
+    localStorage.setItem('pod_fallback_'+BIN_ID, JSON.stringify(updatedTrip));
+    toast('Saved locally (sync pending)','ok');
+  }
+
+  // Show success
+  const sw=document.getElementById('stepper-wrap');
+  if(sw) sw.style.display='none';
+  document.getElementById('step-6').style.display='none';
+  document.getElementById('step-success').style.display='';
+  const di=document.getElementById('done-id');
+  if(di) di.textContent=TRIP.id;
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  // Auto-generate PDFs
+  setTimeout(()=>generatePDF('customer'),700);
+  setTimeout(()=>generatePDF('company'),1800);
+}
+
+function downloadPDF(copy){generatePDF(copy);}
+
+// ══════════ PDF ══════════
+function generatePDF(copy){
+  const pod=TRIP.pod||POD;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  const W=210,M=16,isC=copy==='customer';
+  const ac=isC?[88,101,242]:[34,197,94];
+  let y=M;
+
+  doc.setFillColor(10,10,15);doc.rect(0,0,W,32,'F');
+  doc.setFillColor(...ac);doc.rect(0,0,4,32,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(232,232,240);
+  doc.text("Beyond's TMS",M+4,13);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(136,136,170);
+  doc.text('PROOF OF DELIVERY  ·  '+(isC?'CUSTOMER COPY':'COMPANY COPY'),M+4,21);
+  doc.setTextColor(85,85,112);doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-M,21,{align:'right'});
+  y=36;
+
+  doc.setFillColor(20,20,32);doc.roundedRect(M,y,W-2*M,26,3,3,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...ac);
+  doc.text(TRIP.id,M+5,y+9);
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(34,197,94);
+  doc.text('DELIVERED ✓',W-M-5,y+9,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(100,100,128);
+  doc.text(`LR: ${TRIP.lr||'—'}  ·  Invoice: ${TRIP.inv||'—'}  ·  ${TRIP.rider}  ·  ${TRIP.vno||'—'}`,M+5,y+19);
+  y+=32;
+
+  const section=(title,rows,x,w,sy)=>{
+    doc.setFillColor(20,20,32);doc.rect(x,sy,w,6,'F');
+    doc.setFillColor(...ac);doc.rect(x,sy,3,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+    doc.text(title.toUpperCase(),x+6,sy+4.3);
+    let ry=sy+9;
+    rows.forEach(([k,v])=>{
+      if(!v||v==='—')return;
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(100,100,128);
+      doc.text(k+':',x+3,ry);
+      doc.setFont('helvetica','normal');doc.setTextColor(40,40,55);
+      const ls=doc.splitTextToSize(String(v),w-40);
+      doc.text(ls,x+38,ry);ry+=5.5*ls.length;
+    });
+    return ry+3;
+  };
+
+  const hw=(W-2*M)/2-3;
+  const y1=section('Consignment',[
+    ['Customer',TRIP.cust],['Phone',isC?TRIP.cph:'***'],
+    ['Invoice',TRIP.inv],['Invoice Date',TRIP.invDt?new Date(TRIP.invDt).toLocaleDateString('en-IN'):'—'],
+    ['Goods',TRIP.goods],['Weight',TRIP.wt],['Value','₹'+(TRIP.val||'—')],['Freight','₹'+(TRIP.fr||'—')],
+  ],M,hw,y);
+  const y2=section('Logistics',[
+    ['LR No',TRIP.lr],['Pickup',TRIP.pu],['Delivery',TRIP.del],
+    ['Rider',TRIP.rider],['Vehicle',TRIP.vno],['Date',TRIP.dt],
+  ],M+hw+6,hw,y);
+  y=Math.max(y1,y2)+2;
+
+  section('POD Details',[
+    ['Receiver',pod.receiver],['Phone',pod.recPhone],
+    ['OTP Verified',pod.otpVerified?'✓ YES':'NO'],
+    ['Invoice Uploaded','✓ Yes (attached)'],
+    ['GPS',pod.location||'—'],['Started',pod.startedAt||'—'],
+    ['Completed',pod.completedAt],['Remarks',pod.remarks||'—'],
+  ],M,W-2*M,y);
+  y+=80;
+
+  if(pod.signature&&pod.signature.length>100){
+    try{
+      if(y+38>270){doc.addPage();y=16;}
+      doc.setFillColor(20,20,32);doc.rect(M,y,W-2*M,6,'F');
+      doc.setFillColor(...ac);doc.rect(M,y,3,6,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+      doc.text('RECEIVER SIGNATURE',M+6,y+4.3);y+=8;
+      doc.setDrawColor(40,40,60);doc.setLineWidth(.3);
+      doc.roundedRect(M,y,80,28,2,2,'S');
+      doc.addImage(pod.signature,'PNG',M+2,y+2,76,24);y+=32;
+    }catch(e){}
+  }
+
+  if(pod.invoicePhoto&&pod.invoicePhoto.length>50){
+    try{
+      if(y+72>270){doc.addPage();y=16;}
+      doc.setFillColor(20,20,32);doc.rect(M,y,W-2*M,6,'F');
+      doc.setFillColor(...ac);doc.rect(M,y,3,6,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+      doc.text('STAMPED INVOICE COPY — '+(TRIP.inv||'—'),M+6,y+4.3);y+=8;
+      doc.addImage(pod.invoicePhoto,'JPEG',M,y,90,68);y+=72;
+    }catch(e){}
+  }
+
+  const photos=isC?(pod.deliveryPhotos||[]).slice(0,3):(pod.deliveryPhotos||[]);
+  if(photos.length){
+    if(y+55>270){doc.addPage();y=16;}
+    doc.setFillColor(20,20,32);doc.rect(M,y,W-2*M,6,'F');
+    doc.setFillColor(...ac);doc.rect(M,y,3,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+    doc.text('DELIVERY PHOTOS ('+photos.length+')',M+6,y+4.3);y+=9;
+    const iw=52,ih=40,gap=4;let xi=M,rowY=y;
+    photos.forEach((ph,i)=>{
+      if(y+ih>270){doc.addPage();y=16;xi=M;rowY=y;}
+      try{doc.addImage(ph,'JPEG',xi,y,iw,ih);}catch(ex){}
+      xi+=iw+gap;
+      if((i+1)%3===0){xi=M;y=rowY+ih+gap;rowY=y;}
+    });
+    if(photos.length%3!==0) y=rowY+ih+gap;
+  }
+
+  const pages=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    const fy=doc.internal.pageSize.height-12;
+    doc.setFillColor(10,10,15);doc.rect(0,fy-2,W,14,'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(85,85,112);
+    doc.text(`Beyond's TMS & POD Tracker  ·  ${isC?'Customer':'Company'} Copy  ·  ${TRIP.id}  ·  Pg ${i}/${pages}`,W/2,fy+4,{align:'center'});
+  }
+
+  doc.save(`POD_${TRIP.id}_${copy}.pdf`);
+  toast(`${isC?'Customer':'Company'} copy saved`,'ok');
+}
+
+// ══════════ TOAST ══════════
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show'+(type?' '+type:'');
+  setTimeout(()=>el.className='',2800);
+}
+</script>
+</body>
+</html>
