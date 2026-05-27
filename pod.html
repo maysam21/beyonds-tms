@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Beyond's TMS — Trip Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0f;--bg1:#0f0f17;--bg2:#141420;--bg3:#1a1a2a;
+  --border:#252535;--border2:#2e2e42;
+  --txt:#e8e8f0;--txt2:#8888aa;--txt3:#555570;
+  --accent:#5865f2;--accent2:#7983f5;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.08);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,.08);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.08);
+  --r:10px;--r2:14px;
+  --sh:0 2px 12px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* TOPBAR */
+.topbar{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 18px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.t-logo{width:32px;height:32px;background:linear-gradient(135deg,#5865f2,#7c3aed);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.t-brand{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.2px}
+.t-sub{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;margin-top:1px}
+.t-trip-id{margin-left:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent2)}
+
+/* BODY */
+.body{padding:16px 16px 100px;max-width:480px;margin:0 auto}
+
+/* STEPPER */
+.stepper-wrap{margin-bottom:20px;background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px}
+.stepper{display:flex;align-items:center}
+.sd{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:all .3s;font-family:'JetBrains Mono',monospace}
+.sd.done{background:var(--green);color:#000;box-shadow:0 0 0 3px rgba(34,197,94,.2)}
+.sd.active{background:linear-gradient(135deg,#5865f2,#7c3aed);color:#fff;box-shadow:0 0 0 3px rgba(88,101,242,.25)}
+.sd.pend{background:var(--bg2);color:var(--txt3);border:1px solid var(--border2)}
+.sl{flex:1;height:1px;background:var(--border2);transition:background .3s}
+.sl.done{background:var(--green)}
+.step-labels{display:flex;justify-content:space-between;margin-top:8px}
+.sl-item{font-size:9px;color:var(--txt3);text-align:center;width:26px;line-height:1.3;text-transform:uppercase;letter-spacing:.5px}
+.sl-item.active{color:var(--accent2);font-weight:600}
+.sl-item.done{color:var(--green)}
+
+/* CARDS */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:18px;margin-bottom:14px;box-shadow:var(--sh)}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.step-chip{background:linear-gradient(135deg,#5865f2,#7c3aed);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.step-title{font-size:15px;font-weight:600;color:var(--txt)}
+
+/* INFO TABLE */
+.info-table{width:100%;border-collapse:collapse}
+.info-table tr{border-bottom:1px solid var(--border)}
+.info-table tr:last-child{border-bottom:none}
+.info-table td{padding:8px 0;font-size:13px;vertical-align:top}
+.info-table .ik{color:var(--txt3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;width:38%;padding-right:8px}
+.info-table .iv{color:var(--txt);font-weight:500;line-height:1.4}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:1px}
+.req{color:var(--red)}
+.fg input,.fg select,.fg textarea{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:11px 13px;font-family:'Inter',sans-serif;font-size:14px;color:var(--txt);outline:none;transition:border .2s;width:100%;-webkit-appearance:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);background:var(--bg3)}
+.fg textarea{resize:none}
+.fg input::placeholder{color:var(--txt3)}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:var(--r);border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;transition:all .2s;-webkit-appearance:none;letter-spacing:-.1px}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:linear-gradient(135deg,#5865f2,#7c3aed);color:#fff;box-shadow:0 4px 16px rgba(88,101,242,.3)}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.btn-green:active{background:rgba(34,197,94,.2)}
+.btn-ghost{background:var(--bg2);color:var(--txt2);border:1px solid var(--border2)}
+.btn-close{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.25)}
+.btn-sm{padding:8px 14px;font-size:12px;border-radius:8px;width:auto;display:inline-flex}
+
+/* PHOTO UPLOAD */
+.pu-area{border:1.5px dashed var(--border2);border-radius:var(--r2);padding:24px 16px;text-align:center;cursor:pointer;background:var(--bg2);transition:all .2s;display:block}
+.pu-area:active{border-color:var(--accent);background:var(--bg3)}
+.pu-icon{font-size:32px;margin-bottom:8px;line-height:1}
+.pu-text{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:3px}
+.pu-sub{font-size:11px;color:var(--txt3)}
+
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.photo-wrap{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-wrap .rm{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer}
+
+/* OTP */
+.otp-show{background:var(--bg2);border:1px solid rgba(245,158,11,.3);border-radius:var(--r2);padding:20px;text-align:center}
+.otp-digits{font-family:'JetBrains Mono',monospace;font-size:46px;font-weight:700;color:var(--amber);letter-spacing:10px;line-height:1}
+.otp-hint{font-size:12px;color:var(--txt3);margin-top:8px}
+.otp-field{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;text-align:center;letter-spacing:8px;padding:14px}
+
+/* SIGNATURE */
+#sig-canvas{width:100%;height:140px;display:block;border:1.5px dashed var(--border2);border-radius:var(--r);background:var(--bg2);touch-action:none;cursor:crosshair}
+#sig-canvas.signed{border-color:rgba(34,197,94,.4);background:var(--bg3)}
+
+/* NOTICE */
+.notice{border-radius:var(--r);padding:11px 14px;font-size:12px;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;line-height:1.5}
+.notice-amber{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);color:var(--amber)}
+.notice-green{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);color:var(--green)}
+.notice-red{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);color:var(--red)}
+.notice-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.notice-body{color:var(--txt2)}
+
+/* SUCCESS */
+.success-wrap{text-align:center;padding:32px 8px}
+.s-icon{width:80px;height:80px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;box-shadow:0 0 40px rgba(34,197,94,.15)}
+.s-title{font-size:22px;font-weight:700;color:var(--txt);margin-bottom:8px}
+.s-sub{font-size:13px;color:var(--txt2);margin-bottom:28px;line-height:1.6}
+
+/* SUMMARY CARD */
+.summary-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.summary-row:last-child{border-bottom:none}
+.summary-key{color:var(--txt3);text-transform:uppercase;font-size:10px;letter-spacing:.6px;margin-top:2px}
+.summary-val{color:var(--txt);font-weight:500;text-align:right;max-width:60%;line-height:1.4}
+
+/* GPS BUTTON ROW */
+.gps-row{display:flex;gap:8px;align-items:center}
+.gps-row input{flex:1;font-size:12px}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg2);border:1px solid var(--border2);color:var(--txt);padding:10px 18px;border-radius:30px;font-size:13px;z-index:999;transition:all .25s;white-space:nowrap;box-shadow:var(--sh);opacity:0}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{border-color:rgba(34,197,94,.4);color:var(--green)}
+#toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
+
+/* ERROR / LOADING */
+.err-screen,.load-screen{text-align:center;padding:60px 20px}
+.err-icon{font-size:48px;margin-bottom:16px;opacity:.5}
+.err-title{font-size:18px;font-weight:600;color:var(--txt);margin-bottom:8px}
+.err-sub{font-size:13px;color:var(--txt3);line-height:1.6}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* INVOICE SPECIAL UPLOAD */
+.inv-upload-area{background:var(--bg2);border:1.5px dashed rgba(88,101,242,.4);border-radius:var(--r2);padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;display:block}
+.inv-upload-area:active{border-color:var(--accent);background:var(--bg3)}
+.inv-preview{width:100%;border-radius:var(--r);border:1px solid var(--border2);margin-top:10px;max-height:200px;object-fit:contain;background:var(--bg2)}
+
+@media(min-width:500px){.body{padding:20px 20px 120px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="t-logo">⬡</div>
+  <div>
+    <div class="t-brand">Beyond's TMS</div>
+    <div class="t-sub">RIDER PORTAL</div>
+  </div>
+  <div class="t-trip-id" id="trip-id-badge">—</div>
+</div>
+
+<div class="body" id="main-body">
+
+  <!-- STEPPER -->
+  <div class="stepper-wrap" id="stepper-wrap">
+    <div class="stepper">
+      <div class="sd active" id="sd0">1</div><div class="sl" id="sl01"></div>
+      <div class="sd pend" id="sd1">2</div><div class="sl" id="sl12"></div>
+      <div class="sd pend" id="sd2">3</div><div class="sl" id="sl23"></div>
+      <div class="sd pend" id="sd3">4</div><div class="sl" id="sl34"></div>
+      <div class="sd pend" id="sd4">5</div><div class="sl" id="sl45"></div>
+      <div class="sd pend" id="sd5">6</div><div class="sl" id="sl56"></div>
+      <div class="sd pend" id="sd6">✓</div>
+    </div>
+    <div class="step-labels">
+      <div class="sl-item active" id="lbl0">Info</div>
+      <div class="sl-item pend" id="lbl1">Pickup</div>
+      <div class="sl-item pend" id="lbl2">Deliver</div>
+      <div class="sl-item pend" id="lbl3">Invoice</div>
+      <div class="sl-item pend" id="lbl4">Receiver</div>
+      <div class="sl-item pend" id="lbl5">OTP</div>
+      <div class="sl-item pend" id="lbl6">Sign</div>
+    </div>
+  </div>
+
+  <!-- STEP 0: Trip Info -->
+  <div id="step-0">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">1</div><div class="step-title">Trip Details</div></div>
+      <table class="info-table" id="trip-info-table"></table>
+    </div>
+    <div class="notice notice-amber" id="geo-notice">
+      <div class="notice-icon">📍</div>
+      <div class="notice-body">Fetching your start location… <span id="geo-status" style="color:var(--amber)">Please allow GPS access</span></div>
+    </div>
+    <button class="btn btn-primary" id="start-btn" onclick="startTrip()" disabled style="opacity:.5">
+      🚀 Start Trip
+    </button>
+  </div>
+
+  <!-- STEP 1: Pickup Photos -->
+  <div id="step-1" style="display:none">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">2</div><div class="step-title">Pickup Photos</div></div>
+      <div class="notice notice-amber">
+        <div class="notice-icon">📍</div>
+        <div class="notice-body">At pickup location — photograph goods, loading state, quantity labels</div>
+      </div>
+      <label class="pu-area" for="pu-input">
+        <div class="pu-icon">📷</div>
+        <div class="pu-text">Tap to capture photos</div>
+        <div class="pu-sub">Goods, boxes, condition at pickup</div>
+        <input type="file" id="pu-input" multiple accept="image/*" capture="environment" style="display:none" onchange="addPhotos(this,'pu-grid','pickupPhotos')">
+      </label>
+      <div class="photo-grid" id="pu-grid"></div>
+      <div id="pu-count" style="font-size:11px;color:var(--txt3);margin-top:8px;text-align:center"></div>
+    </div>
+    <button class="btn btn-primary" onclick="goStep(2)">Next: Delivery Photos →</button>
+  </div>
+
+  <!-- STEP 2: Delivery Photos -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">3</div><div class="step-title">Delivery Photos</div></div>
+      <div class="notice notice-amber">
+        <div class="notice-icon">📦</div>
+        <div class="notice-body">At delivery point — photograph unloaded goods, delivery location, final state. <b>Minimum 1 required.</b></div>
+      </div>
+      <label class="pu-area" for="del-input">
+        <div class="pu-icon">📦</div>
+        <div class="pu-text">Capture delivery photos</div>
+        <div class="pu-sub">Goods unloaded, delivery area</div>
+        <input type="file" id="del-input" multiple accept="image/*" capture="environment" style="display:none" onchange="addPhotos(this,'del-grid','deliveryPhotos')">
+      </label>
+      <div class="photo-grid" id="del-grid"></div>
+      <div id="del-count" style="font-size:11px;color:var(--txt3);margin-top:8px;text-align:center"></div>
+    </div>
+    <button class="btn btn-primary" onclick="checkDelPhotos()">Next: Invoice Copy →</button>
+  </div>
+
+  <!-- STEP 3: Signed Invoice Upload -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">4</div><div class="step-title">Stamped Invoice Copy</div></div>
+      <div class="notice notice-amber">
+        <div class="notice-icon">🧾</div>
+        <div class="notice-body"><b>Important:</b> Upload a clear photo of the physical invoice copy with the customer's <b>received stamp</b> and <b>signature</b> on it.</div>
+      </div>
+
+      <div id="inv-info-box" style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
+        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Invoice Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:10px;color:var(--txt3)">Invoice No.</div>
+            <div style="font-size:14px;font-weight:700;color:var(--accent2);font-family:'JetBrains Mono',monospace" id="inv-no-display">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--txt3)">Invoice Date</div>
+            <div style="font-size:13px;font-weight:600;color:var(--txt)" id="inv-dt-display">—</div>
+          </div>
+        </div>
+      </div>
+
+      <label class="inv-upload-area" for="inv-photo-input">
+        <div style="font-size:36px;margin-bottom:8px">🧾</div>
+        <div class="pu-text">Tap to photograph invoice</div>
+        <div class="pu-sub">Clear, readable, shows stamp & signature</div>
+        <input type="file" id="inv-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleInvoicePhoto(this)">
+      </label>
+      <img id="inv-preview" class="inv-preview" src="" style="display:none">
+      <div id="inv-upload-status" style="font-size:12px;text-align:center;margin-top:8px;min-height:16px"></div>
+    </div>
+    <div style="font-size:12px;color:var(--txt3);text-align:center;margin-bottom:12px">You can proceed even if invoice is not available right now</div>
+    <button class="btn btn-primary" onclick="goStep(4)">Next: Receiver Info →</button>
+  </div>
+
+  <!-- STEP 4: Receiver Info -->
+  <div id="step-4" style="display:none">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">5</div><div class="step-title">Receiver Information</div></div>
+      <div class="fg">
+        <label>Receiver Full Name <span class="req">*</span></label>
+        <input id="rec-name" placeholder="Name of person accepting goods" autocomplete="name">
+      </div>
+      <div class="fg">
+        <label>Receiver Phone <span class="req">*</span></label>
+        <input id="rec-phone" type="tel" placeholder="+91 XXXXXXXXXX" autocomplete="tel">
+      </div>
+      <div class="fg">
+        <label>Delivery Remarks</label>
+        <textarea id="rec-remarks" rows="2" placeholder="Goods received in good condition…"></textarea>
+      </div>
+      <div class="fg">
+        <label>GPS Location</label>
+        <div class="gps-row">
+          <input id="rec-gps" placeholder="Tap button to capture GPS" readonly style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--txt3)">
+          <button class="btn btn-ghost btn-sm" style="flex-shrink:0;white-space:nowrap" onclick="captureGPS()">📍 Capture</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="goStep5()">Next: OTP Verification →</button>
+  </div>
+
+  <!-- STEP 5: OTP -->
+  <div id="step-5" style="display:none">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">6</div><div class="step-title">OTP Verification</div></div>
+      <div class="notice notice-amber">
+        <div class="notice-icon">🔢</div>
+        <div class="notice-body"><b>Show this OTP to the customer / receiver.</b> Ask them to read back the 6-digit code to confirm delivery.</div>
+      </div>
+      <div class="otp-show">
+        <div class="otp-digits" id="otp-display">——</div>
+        <div class="otp-hint">↑ Show screen to receiver — they read this aloud ↑</div>
+      </div>
+      <div style="margin-top:18px" class="fg">
+        <label>Enter OTP spoken by receiver</label>
+        <input id="otp-entry" class="otp-field" type="number" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="_ _ _ _ _ _" oninput="checkOTP()">
+      </div>
+      <div id="otp-msg" style="min-height:22px;text-align:center;font-size:13px;font-weight:600;margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- STEP 6: Signature + Close -->
+  <div id="step-6" style="display:none">
+    <div class="card">
+      <div class="card-head"><div class="step-chip">7</div><div class="step-title">Receiver Signature</div></div>
+      <div class="notice notice-amber">
+        <div class="notice-icon">✍️</div>
+        <div class="notice-body">Hand phone to receiver. Sign in the box using finger or stylus.</div>
+      </div>
+      <canvas id="sig-canvas"></canvas>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="clearSig()">🗑 Clear</button>
+        <span style="font-size:11px;color:var(--txt3);margin-left:auto" id="sig-status">Not signed yet</span>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">POD Summary</div>
+      <div id="summary-content"></div>
+    </div>
+
+    <button class="btn btn-close" onclick="closeTrip()">✅ Close Trip & Generate POD</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="step-success" style="display:none">
+    <div class="card">
+      <div class="success-wrap">
+        <div class="s-icon">✅</div>
+        <div class="s-title">Trip Closed!</div>
+        <div class="s-sub">POD has been captured and saved.<br>Download both copies below.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+          <button class="btn btn-primary" onclick="downloadPDF('customer')">📄 Customer Copy (PDF)</button>
+          <button class="btn btn-ghost" onclick="downloadPDF('company')">📄 Company Copy (PDF)</button>
+        </div>
+        <div class="notice notice-green">
+          <div class="notice-icon">⬡</div>
+          <div class="notice-body">Trip <b id="done-id"></b> marked as Delivered. Great work!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /body -->
+<div id="toast"></div>
+
+<script>
+// ══════════ STATE ══════════
+let TRIP=null;
+let POD={pickupPhotos:[],deliveryPhotos:[],invoicePhoto:'',receiver:'',recPhone:'',remarks:'',location:'',otpVerified:false,signature:'',startedAt:'',startLocation:''};
+let currentStep=0;
+let sigCtx=null,sigDrawing=false,hasSig=false;
+
+// ══════════ LOAD TRIP ══════════
+function loadTrip(){
+  const p=new URLSearchParams(window.location.search);
+  const d=p.get('d');
+  if(!d){showErr('Invalid Link','No trip data found. Please open the correct link sent by dispatch.');return;}
+  try{
+    TRIP=JSON.parse(decodeURIComponent(escape(atob(d))));
+    document.getElementById('trip-id-badge').textContent=TRIP.id;
+    renderTripInfo();
+    document.getElementById('otp-display').textContent=TRIP.otp;
+    document.getElementById('inv-no-display').textContent=TRIP.inv||'Not specified';
+    document.getElementById('inv-dt-display').textContent=TRIP.invDt?new Date(TRIP.invDt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'Not specified';
+    initSig();
+    getGPS('start');
+  }catch(e){showErr('Invalid Link','The link appears to be corrupted. Ask dispatch to resend.');}
+}
+
+function showErr(title,sub){
+  document.getElementById('stepper-wrap').style.display='none';
+  document.getElementById('step-0').innerHTML=`
+    <div class="err-screen">
+      <div class="err-icon">⬡</div>
+      <div class="err-title">${title}</div>
+      <div class="err-sub">${sub}</div>
+    </div>`;
+  document.getElementById('step-0').style.display='';
+}
+
+function renderTripInfo(){
+  const t=TRIP;
+  const rows=[
+    ['Trip ID',t.id],['Customer',t.cust],
+    ['Goods',t.goods||'—'],['Weight',t.wt||'—'],
+    ['Declared Value',t.val?'₹'+t.val:'—'],
+    ['Pickup',t.pu],['Delivery',t.del],
+    ['Invoice',t.inv||'Not specified'],
+    ['Vehicle',`${t.vno||'—'} · ${t.vt||'—'}`],
+    ['Date',t.dt||'—'],
+  ];
+  document.getElementById('trip-info-table').innerHTML=rows.map(([k,v])=>`
+    <tr><td class="ik">${k}</td><td class="iv">${v}</td></tr>`).join('');
+  if(t.notes){
+    document.getElementById('trip-info-table').insertAdjacentHTML('afterend',`
+      <div class="notice notice-amber" style="margin-top:10px">
+        <div class="notice-icon">📝</div>
+        <div class="notice-body"><b>Special Instructions:</b> ${t.notes}</div>
+      </div>`);
+  }
+}
+
+// ══════════ GPS ══════════
+function getGPS(phase){
+  if(!navigator.geolocation){
+    document.getElementById('geo-status').textContent='GPS unavailable';
+    enableStart();return;
+  }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const loc=pos.coords.latitude.toFixed(5)+','+pos.coords.longitude.toFixed(5);
+    if(phase==='start'){
+      POD.startLocation=loc;
+      document.getElementById('geo-status').textContent='Location confirmed ✓';
+      document.getElementById('geo-status').style.color='var(--green)';
+    }
+    enableStart();
+  },()=>{
+    document.getElementById('geo-status').textContent='Location skipped';
+    enableStart();
+  },{timeout:8000,enableHighAccuracy:true});
+}
+
+function captureGPS(){
+  if(!navigator.geolocation){toast('GPS not available','err');return;}
+  toast('Capturing GPS…');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const loc=pos.coords.latitude.toFixed(5)+','+pos.coords.longitude.toFixed(5);
+    document.getElementById('rec-gps').value=loc;
+    POD.location=loc;
+    toast('Location captured','ok');
+  },()=>toast('Could not get location','err'),{timeout:8000,enableHighAccuracy:true});
+}
+
+function enableStart(){
+  const btn=document.getElementById('start-btn');
+  btn.disabled=false;btn.style.opacity='1';
+}
+
+// ══════════ STEPPER ══════════
+const STEP_LABELS=['Info','Pickup','Deliver','Invoice','Receiver','OTP','Sign'];
+
+function updateStepper(active){
+  for(let i=0;i<=6;i++){
+    const dot=document.getElementById('sd'+i);
+    const lbl=document.getElementById('lbl'+i);
+    dot.className='sd '+(i<active?'done':i===active?'active':'pend');
+    lbl.className='sl-item '+(i<active?'done':i===active?'active':'pend');
+    if(i>0)document.getElementById('sl'+(i-1)+i).className='sl'+(i<=active?' done':'');
+  }
+}
+
+function goStep(n){
+  document.getElementById('step-'+currentStep).style.display='none';
+  document.getElementById('step-'+n).style.display='';
+  updateStepper(n);
+  currentStep=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════ START ══════════
+function startTrip(){
+  POD.startedAt=new Date().toLocaleString('en-IN');
+  goStep(1);
+  toast('Trip started!','ok');
+}
+
+// ══════════ PHOTO HANDLING ══════════
+function addPhotos(input,gridId,podKey){
+  Array.from(input.files).forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        const max=1100;let w=img.width,h=img.height;
+        if(w>max||h>max){const r=Math.min(max/w,max/h);w*=r;h*=r;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const compressed=canvas.toDataURL('image/jpeg',.72);
+        POD[podKey].push(compressed);
+        updateCount(gridId,podKey);
+        addPhotoToGrid(gridId,compressed,POD[podKey].length-1,podKey);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+  input.value='';
+}
+
+function addPhotoToGrid(gridId,src,idx,podKey){
+  const grid=document.getElementById(gridId);
+  const wrap=document.createElement('div');wrap.className='photo-wrap';
+  const img=document.createElement('img');img.src=src;
+  const rm=document.createElement('button');rm.className='rm';rm.textContent='×';
+  rm.onclick=e=>{e.stopPropagation();POD[podKey].splice(idx,1);wrap.remove();updateCount(gridId,podKey);};
+  wrap.appendChild(img);wrap.appendChild(rm);grid.appendChild(wrap);
+}
+
+function updateCount(gridId,podKey){
+  const n=POD[podKey].length;
+  const id=gridId==='pu-grid'?'pu-count':'del-count';
+  const el=document.getElementById(id);
+  if(el) el.textContent=n>0?n+' photo'+(n>1?'s':'')+' added':'';
+}
+
+function checkDelPhotos(){
+  if(POD.deliveryPhotos.length===0){toast('Upload at least 1 delivery photo','err');return;}
+  goStep(3);
+}
+
+// ══════════ INVOICE PHOTO ══════════
+function handleInvoicePhoto(input){
+  const f=input.files[0];if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const max=1600;let w=img.width,h=img.height;
+      if(w>max||h>max){const r=Math.min(max/w,max/h);w*=r;h*=r;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      POD.invoicePhoto=canvas.toDataURL('image/jpeg',.82);
+      const preview=document.getElementById('inv-preview');
+      preview.src=POD.invoicePhoto;
+      preview.style.display='block';
+      document.getElementById('inv-upload-status').innerHTML='<span style="color:var(--green)">✓ Invoice photo uploaded</span>';
+      POD.invoiceUploaded=true;
+      toast('Invoice photo saved','ok');
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);
+  input.value='';
+}
+
+// ══════════ RECEIVER ══════════
+function goStep5(){
+  const name=document.getElementById('rec-name').value.trim();
+  const phone=document.getElementById('rec-phone').value.trim();
+  if(!name){toast('Enter receiver name','err');return;}
+  if(!phone){toast('Enter receiver phone','err');return;}
+  POD.receiver=name;
+  POD.recPhone=phone;
+  POD.remarks=document.getElementById('rec-remarks').value.trim();
+  POD.location=document.getElementById('rec-gps').value||POD.location||'';
+  renderSummary();
+  goStep(5);
+}
+
+// ══════════ OTP ══════════
+function checkOTP(){
+  const val=document.getElementById('otp-entry').value.trim();
+  const msg=document.getElementById('otp-msg');
+  if(val.length<6){msg.textContent='';return;}
+  if(val===String(TRIP.otp)){
+    msg.innerHTML='<span style="color:var(--green)">✅ OTP Verified! Proceeding to signature…</span>';
+    POD.otpVerified=true;
+    setTimeout(()=>goStep(6),900);
+  }else{
+    msg.innerHTML='<span style="color:var(--red)">❌ Incorrect OTP — please retry</span>';
+  }
+}
+
+// ══════════ SIGNATURE ══════════
+function initSig(){
+  const canvas=document.getElementById('sig-canvas');
+  if(!canvas) return;
+  const resize=()=>{canvas.width=canvas.offsetWidth||360;canvas.height=140;initSigCtx();};
+  resize();
+  window.addEventListener('resize',resize);
+}
+
+function initSigCtx(){
+  const canvas=document.getElementById('sig-canvas');
+  sigCtx=canvas.getContext('2d');
+  sigCtx.strokeStyle='#e8e8f0';
+  sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+
+  const pos=e=>{
+    const r=canvas.getBoundingClientRect(),sx=canvas.width/r.width,sy=canvas.height/r.height;
+    if(e.touches) return{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy};
+    return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};
+  };
+  canvas.onmousedown=e=>{sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
+  canvas.onmousemove=e=>{if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};
+  canvas.onmouseup=()=>sigDrawing=false;
+  canvas.ontouchstart=e=>{e.preventDefault();sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
+  canvas.ontouchmove=e=>{e.preventDefault();if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};
+  canvas.ontouchend=()=>sigDrawing=false;
+}
+
+function markSig(){
+  hasSig=true;
+  document.getElementById('sig-status').innerHTML='<span style="color:var(--green)">✓ Signature captured</span>';
+  document.getElementById('sig-canvas').classList.add('signed');
+}
+
+function clearSig(){
+  if(sigCtx) sigCtx.clearRect(0,0,sigCtx.canvas.width,sigCtx.canvas.height);
+  hasSig=false;
+  document.getElementById('sig-status').textContent='Not signed yet';
+  document.getElementById('sig-canvas').classList.remove('signed');
+}
+
+// ══════════ SUMMARY ══════════
+function renderSummary(){
+  const rows=[
+    ['Receiver',POD.receiver],['Phone',POD.recPhone],
+    ['Remarks',POD.remarks||'None'],
+    ['Pickup Photos',POD.pickupPhotos.length+' uploaded'],
+    ['Delivery Photos',POD.deliveryPhotos.length+' uploaded'],
+    ['Invoice Copy',POD.invoiceUploaded?'✓ Uploaded':'Not uploaded'],
+    ['OTP Status',POD.otpVerified?'✓ Verified':'Pending'],
+    ['GPS',POD.location||'Not captured'],
+  ];
+  document.getElementById('summary-content').innerHTML=rows.map(([k,v])=>`
+    <div class="summary-row">
+      <div class="summary-key">${k}</div>
+      <div class="summary-val">${v}</div>
+    </div>`).join('');
+}
+
+// ══════════ CLOSE TRIP ══════════
+function closeTrip(){
+  if(!hasSig){toast('Please get receiver signature','err');return;}
+  POD.signature=document.getElementById('sig-canvas').toDataURL('image/png');
+  POD.completedAt=new Date().toLocaleString('en-IN');
+  TRIP.pod={...POD};
+  TRIP.status='Delivered';
+
+  // Save to localStorage (syncs with admin if same browser)
+  try{
+    const db=JSON.parse(localStorage.getItem('beyonds_db')||'{"trips":[],"pods":[]}');
+    const idx=db.trips.findIndex(t=>t.id===TRIP.id);
+    if(idx>=0) db.trips[idx]={...TRIP};
+    else db.trips.push({...TRIP});
+    localStorage.setItem('beyonds_db',JSON.stringify(db));
+  }catch(e){}
+
+  document.getElementById('step-6').style.display='none';
+  document.getElementById('step-success').style.display='';
+  document.getElementById('stepper-wrap').style.display='none';
+  document.getElementById('done-id').textContent=TRIP.id;
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('POD captured!','ok');
+
+  setTimeout(()=>generatePDF('customer'),600);
+  setTimeout(()=>generatePDF('company'),1600);
+}
+
+function downloadPDF(copy){ generatePDF(copy); }
+
+// ══════════ PDF ══════════
+function generatePDF(copy){
+  if(!TRIP||!TRIP.pod){toast('No trip data','err');return;}
+  const pod=TRIP.pod;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  const W=210,M=16,isC=copy==='customer';
+  const ac=isC?[88,101,242]:[34,197,94];
+  let y=M;
+
+  // Header
+  doc.setFillColor(10,10,15);doc.rect(0,0,W,32,'F');
+  doc.setFillColor(...ac);doc.rect(0,0,4,32,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(232,232,240);
+  doc.text("Beyond's TMS",M+4,13);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(136,136,170);
+  doc.text('PROOF OF DELIVERY  ·  '+(isC?'CUSTOMER COPY':'COMPANY COPY'),M+4,21);
+  doc.setTextColor(85,85,112);
+  doc.text('Generated: '+new Date().toLocaleString('en-IN'),W-M,21,{align:'right'});
+  y=38;
+
+  // Trip bar
+  doc.setFillColor(20,20,32);doc.roundedRect(M,y,W-2*M,26,3,3,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...ac);
+  doc.text(TRIP.id,M+5,y+9);
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(34,197,94);
+  doc.text('DELIVERED ✓',W-M-5,y+9,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(100,100,128);
+  doc.text(`LR: ${TRIP.lr||'—'}   ·   Invoice: ${TRIP.inv||'—'}   ·   Date: ${TRIP.dt||'—'}   ·   ${TRIP.rider}   ·   ${TRIP.vno||'—'}`,M+5,y+19);
+  y+=32;
+
+  const section=(title,rows,x,w,sy)=>{
+    doc.setFillColor(20,20,32);doc.rect(x,sy,w,6,'F');
+    doc.setFillColor(...ac);doc.rect(x,sy,3,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+    doc.text(title.toUpperCase(),x+6,sy+4.3);
+    doc.setTextColor(26,22,16);
+    let ry=sy+9;
+    rows.forEach(([k,v])=>{
+      if(!v||v==='—')return;
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(100,100,128);
+      doc.text(k+':',x+3,ry);
+      doc.setFont('helvetica','normal');doc.setTextColor(40,40,55);
+      const ls=doc.splitTextToSize(String(v),w-40);
+      doc.text(ls,x+38,ry);
+      ry+=5.5*ls.length;
+    });
+    return ry+3;
+  };
+
+  const hw=(W-2*M)/2-3;
+  const y1=section('Consignment',[
+    ['Customer',TRIP.cust],['Phone',isC?TRIP.cph:'***'],['Invoice No',TRIP.inv||'—'],
+    ['Invoice Date',TRIP.invDt?new Date(TRIP.invDt).toLocaleDateString('en-IN'):'—'],
+    ['Goods',TRIP.goods],['Weight',TRIP.wt],['Value','₹'+(TRIP.val||'—')],['Freight','₹'+(TRIP.fr||'—')],
+  ],M,hw,y);
+  const y2=section('Logistics',[
+    ['LR No',TRIP.lr],['Pickup',TRIP.pu],['Delivery',TRIP.del],
+    ['Rider',TRIP.rider],['Vehicle',TRIP.vno],['Type',TRIP.vt],
+  ],M+hw+6,hw,y);
+  y=Math.max(y1,y2)+2;
+
+  const y3=section('POD Details',[
+    ['Receiver',pod.receiver],['Phone',pod.recPhone],
+    ['OTP Verified',pod.otpVerified?'✓ YES':'NO'],
+    ['Invoice Uploaded',pod.invoiceUploaded?'✓ Yes':'No'],
+    ['GPS',pod.location||'—'],['Started',pod.startedAt||'—'],
+    ['Completed',pod.completedAt],['Remarks',pod.remarks||'—'],
+  ],M,W-2*M,y);
+  y=y3;
+
+  // Signature
+  if(pod.signature&&pod.signature.length>100){
+    try{
+      if(y+38>270){doc.addPage();y=16;}
+      doc.setFillColor(20,20,32);doc.rect(M,y,W-2*M,6,'F');
+      doc.setFillColor(...ac);doc.rect(M,y,3,6,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+      doc.text('RECEIVER SIGNATURE',M+6,y+4.3);y+=8;
+      doc.setDrawColor(40,40,60);doc.setLineWidth(.3);
+      doc.roundedRect(M,y,80,28,2,2,'S');
+      doc.addImage(pod.signature,'PNG',M+2,y+2,76,24);
+      y+=32;
+    }catch(e){}
+  }
+
+  // Invoice photo
+  if(pod.invoicePhoto&&pod.invoicePhoto.length>50){
+    try{
+      if(y+70>270){doc.addPage();y=16;}
+      doc.setFillColor(20,20,32);doc.rect(M,y,W-2*M,6,'F');
+      doc.setFillColor(...ac);doc.rect(M,y,3,6,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+      doc.text('STAMPED INVOICE COPY — '+( TRIP.inv||'—'),M+6,y+4.3);y+=8;
+      doc.addImage(pod.invoicePhoto,'JPEG',M,y,90,68);
+      y+=72;
+    }catch(e){}
+  }
+
+  // Delivery photos
+  const photos=isC?(pod.deliveryPhotos||[]).slice(0,3):(pod.deliveryPhotos||[]);
+  if(photos.length){
+    if(y+55>270){doc.addPage();y=16;}
+    doc.setFillColor(20,20,32);doc.rect(M,y,W-2*M,6,'F');
+    doc.setFillColor(...ac);doc.rect(M,y,3,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(180,180,210);
+    doc.text('DELIVERY PHOTOS ('+photos.length+')',M+6,y+4.3);y+=9;
+    const iw=52,ih=40,gap=4;let xi=M,rowY=y;
+    photos.forEach((ph,i)=>{
+      if(y+ih>270){doc.addPage();y=16;xi=M;rowY=y;}
+      try{doc.addImage(ph,'JPEG',xi,y,iw,ih);}catch(ex){}
+      xi+=iw+gap;
+      if((i+1)%3===0){xi=M;y=rowY+ih+gap;rowY=y;}
+    });
+    if(photos.length%3!==0) y=rowY+ih+gap;
+  }
+
+  // Footer
+  const pages=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    const fy=doc.internal.pageSize.height-12;
+    doc.setFillColor(10,10,15);doc.rect(0,fy-2,W,14,'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(85,85,112);
+    doc.text(`Beyond's TMS & POD Tracker  ·  ${isC?'Customer':'Company'} Copy  ·  ${TRIP.id}  ·  Pg ${i}/${pages}`,W/2,fy+4,{align:'center'});
+  }
+
+  doc.save(`POD_${TRIP.id}_${copy}.pdf`);
+  toast(`${isC?'Customer':'Company'} copy saved`,'ok');
+}
+
+// ══════════ TOAST ══════════
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show'+(type?' '+type:'');
+  setTimeout(()=>el.className='',2800);
+}
+
+// ══════════ INIT ══════════
+window.addEventListener('DOMContentLoaded',loadTrip);
+</script>
+</body>
+</html>
