@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beyond's TMS & POD Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0f;--bg1:#0f0f17;--bg2:#141420;--bg3:#1a1a2a;
+  --border:#252535;--border2:#2e2e42;
+  --txt:#e8e8f0;--txt2:#8888aa;--txt3:#555570;
+  --accent:#5865f2;--accent2:#7983f5;--ag:linear-gradient(135deg,#5865f2,#7c3aed);
+  --green:#22c55e;--gbg:rgba(34,197,94,.08);--gbdr:rgba(34,197,94,.2);
+  --amber:#f59e0b;--abg:rgba(245,158,11,.08);--abdr:rgba(245,158,11,.2);
+  --red:#ef4444;--rbg:rgba(239,68,68,.08);--rbdr:rgba(239,68,68,.2);
+  --blue:#3b82f6;--bbg:rgba(59,130,246,.08);--bbdr:rgba(59,130,246,.2);
+  --r:8px;--r2:12px;--sh:0 1px 4px rgba(0,0,0,.5);--sh2:0 8px 40px rgba(0,0,0,.65);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50}
+.content{margin-left:220px;flex:1;display:flex;flex-direction:column;min-width:0}
+.sb-top{padding:18px 14px 14px;border-bottom:1px solid var(--border)}
+.sb-logo{display:flex;align-items:center;gap:9px}
+.sb-ico{width:32px;height:32px;background:var(--ag);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-name{font-size:13px;font-weight:700;letter-spacing:-.2px;line-height:1.25}
+.sb-sub{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:1.5px;margin-top:1px}
+.sb-ver{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt3);margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
+.sb-nav{padding:12px 8px;flex:1;overflow-y:auto}
+.sb-gl{font-size:9px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:1.5px;padding:0 8px;margin:10px 0 4px}
+.sb-gl:first-child{margin-top:0}
+.sb-lnk{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;color:var(--txt2);font-size:12.5px;font-weight:500;transition:all .15s;border:1px solid transparent;user-select:none}
+.sb-lnk:hover{background:var(--bg2);color:var(--txt)}
+.sb-lnk.on{background:rgba(88,101,242,.1);color:var(--accent2);border-color:rgba(88,101,242,.18)}
+.sb-lnk-i{font-size:13px;width:16px;text-align:center;flex-shrink:0;opacity:.7}
+.sb-lnk.on .sb-lnk-i{opacity:1}
+.sb-bdg{margin-left:auto;font-size:9px;font-weight:700;padding:2px 5px;border-radius:7px}
+.sb-bdg.red{background:var(--red);color:#fff}.sb-bdg.amber{background:var(--amber);color:#000}
+.sb-bot{padding:12px 10px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:8px}
+.sb-av{width:28px;height:28px;border-radius:50%;background:var(--ag);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-un{font-size:12px;font-weight:600}.sb-ur{font-size:10px;color:var(--txt3)}
+.topbar{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+.tb-l{display:flex;flex-direction:column;gap:1px}
+.tb-title{font-size:14.5px;font-weight:600;letter-spacing:-.2px}
+.tb-bc{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace}
+.tb-r{display:flex;align-items:center;gap:8px}
+.sync-pill{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;display:flex;align-items:center;gap:5px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+.sdot.err{background:var(--red);animation:none}.sdot.wait{background:var(--amber);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.main{padding:22px 24px;flex:1}
+.page{display:none}.page.on{display:block}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:20px}
+.sc{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:15px 16px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.bl::before{background:linear-gradient(90deg,var(--blue),transparent)}.sc.gn::before{background:linear-gradient(90deg,var(--green),transparent)}
+.sc.am::before{background:linear-gradient(90deg,var(--amber),transparent)}.sc.rd::before{background:linear-gradient(90deg,var(--red),transparent)}
+.sc.pu::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.sc-l{font-size:10px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.sc-v{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-1px}
+.sc-s{font-size:10px;color:var(--txt3);margin-top:2px}.sc-i{position:absolute;right:12px;top:12px;font-size:17px;opacity:.18}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:18px}
+.ch{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ct{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.cd{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.cb{padding:16px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;padding:8px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;background:rgba(0,0,0,.2)}
+td{padding:10px 13px;font-size:12.5px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .1s}
+tbody tr:hover td{background:rgba(255,255,255,.015)}
+tbody tr.lat td{background:rgba(239,68,68,.03)}
+tbody tr.lat td:first-child{border-left:2px solid var(--red)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.bg{background:var(--gbg);color:var(--green);border:1px solid var(--gbdr)}.ba{background:var(--abg);color:var(--amber);border:1px solid var(--abdr)}
+.br{background:var(--rbg);color:var(--red);border:1px solid var(--rbdr)}.bb{background:var(--bbg);color:var(--blue);border:1px solid var(--bbdr)}
+.bgr{background:rgba(255,255,255,.04);color:var(--txt3);border:1px solid var(--border)}.bpu{background:rgba(88,101,242,.1);color:var(--accent2);border:1px solid rgba(88,101,242,.2)}
+.late-tag{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--red);background:var(--rbg);border:1px solid var(--rbdr);border-radius:4px;padding:2px 5px;margin-left:4px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r);border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;transition:all .15s;white-space:nowrap;text-decoration:none}
+.btn:active{transform:scale(.97)}
+.bp{background:var(--ag);color:#fff;box-shadow:0 2px 8px rgba(88,101,242,.3)}.bp:hover{opacity:.9}
+.bg2{background:var(--gbg);color:var(--green);border:1px solid var(--gbdr)}.bg2:hover{background:rgba(34,197,94,.14)}
+.bwa{background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.2)}.bwa:hover{background:rgba(37,211,102,.18)}
+.bgh{background:rgba(255,255,255,.04);color:var(--txt2);border:1px solid var(--border)}.bgh:hover{background:rgba(255,255,255,.08);color:var(--txt)}
+.brd{background:var(--rbg);color:var(--red);border:1px solid var(--rbdr)}.brd:hover{background:rgba(239,68,68,.15)}
+.bgld{background:rgba(34,197,94,.08);color:var(--green);border:1px solid var(--gbdr)}.bgld:hover{background:rgba(34,197,94,.14)}
+.bsm{padding:4px 9px;font-size:11px;border-radius:6px}.brow{display:flex;gap:5px;flex-wrap:wrap}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fg{display:flex;flex-direction:column;gap:4px}.fg.s2{grid-column:1/-1}
+.fg label{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px}
+.fg input,.fg select,.fg textarea{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 11px;font-family:'Inter',sans-serif;font-size:13px;color:var(--txt);outline:none;transition:border .2s;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);background:var(--bg3)}
+.fg textarea{resize:none}.fg select option{background:var(--bg2)}.fg input::placeholder{color:var(--txt3)}.req{color:var(--red);margin-left:2px}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:13px}
+.fbar input,.fbar select{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 10px;font-family:'Inter',sans-serif;font-size:12px;color:var(--txt);outline:none}
+.fbar input{width:200px}.fbar input:focus,.fbar select:focus{border-color:var(--accent)}.fbar select option{background:var(--bg2)}
+.rbox{background:var(--bg2);border:1px solid rgba(88,101,242,.25);border-radius:var(--r2);padding:14px}
+.wabox{background:rgba(37,211,102,.05);border:1px solid rgba(37,211,102,.2);border-radius:var(--r);padding:11px 13px;margin:8px 0}
+.wa-url{font-family:'JetBrains Mono',monospace;font-size:10px;color:#4ade80;word-break:break-all;line-height:1.7}
+.otp-chip{display:inline-block;background:var(--abg);border:1px solid var(--abdr);border-radius:var(--r);padding:4px 12px;font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--amber);letter-spacing:5px}
+.mover{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2)}
+.mh{padding:17px 22px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1}
+.mt{font-size:14px;font-weight:600}
+.mc{background:var(--bg2);border:1px solid var(--border);color:var(--txt3);border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px}
+.mc:hover{color:var(--txt)}.mb{padding:16px 22px 22px}
+.pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+.pm-cell{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px}
+.pm-k{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}.pm-v{font-size:12.5px;font-weight:500}
+/* SETUP */
+.setup-wrap{max-width:500px;margin:50px auto;padding:0 20px;text-align:center}
+.setup-logo{width:60px;height:60px;background:var(--ag);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 18px}
+.setup-title{font-size:22px;font-weight:700;margin-bottom:7px;letter-spacing:-.3px}
+.setup-sub{font-size:13px;color:var(--txt2);margin-bottom:24px;line-height:1.6}
+.snum{width:22px;height:22px;border-radius:50%;background:var(--ag);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+.stxt{font-size:12.5px;color:var(--txt2);line-height:1.55}.stxt b{color:var(--txt)}.stxt code{background:var(--bg2);border:1px solid var(--border2);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent2)}
+.sinput{background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--txt);outline:none;width:100%;transition:border .2s;margin:6px 0 11px}
+.sinput:focus{border-color:var(--accent)}
+/* DATA MGT */
+.danger-zone{background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:var(--r2);padding:16px 18px;margin-top:14px}
+.dz-title{font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.dz-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(239,68,68,.1)}
+.dz-row:last-child{border-bottom:none;padding-bottom:0}
+.dz-label{font-size:13px;font-weight:600;color:var(--txt)}.dz-sub{font-size:11px;color:var(--txt3);margin-top:2px}
+/* NOTICE */
+.notice{border-radius:var(--r);padding:10px 13px;font-size:12px;display:flex;gap:8px;align-items:flex-start;margin-bottom:13px;line-height:1.5}
+.notice.am{background:var(--abg);border:1px solid var(--abdr)}.notice.gn{background:var(--gbg);border:1px solid var(--gbdr)}
+.notice.rd{background:var(--rbg);border:1px solid var(--rbdr)}.notice.bl{background:var(--bbg);border:1px solid var(--bbdr)}
+.n-ico{flex-shrink:0}.n-body{color:var(--txt2)}
+/* CONFIRM */
+.conf-ov{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.conf-box{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:380px;padding:24px;box-shadow:var(--sh2)}
+.conf-title{font-size:16px;font-weight:700;margin-bottom:8px}
+.conf-sub{font-size:12.5px;color:var(--txt2);margin-bottom:20px;line-height:1.5}
+.conf-btns{display:flex;gap:10px}.conf-btns .btn{flex:1;justify-content:center;padding:11px}
+#loader{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;backdrop-filter:blur(4px)}
+.spin{width:34px;height:34px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-lbl{font-size:12px;color:var(--txt3);font-family:'JetBrains Mono',monospace}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--border2);color:var(--txt);padding:9px 14px;border-radius:var(--r);font-size:12.5px;z-index:999;transform:translateY(50px);opacity:0;transition:all .25s;box-shadow:var(--sh2);max-width:300px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.ok{border-color:var(--gbdr);color:var(--green)}
+#toast.err{border-color:var(--rbdr);color:var(--red)}
+#toast.info{border-color:rgba(88,101,242,.4);color:var(--accent2)}
+.empty{text-align:center;padding:36px 20px;color:var(--txt3)}.empty-i{font-size:28px;margin-bottom:10px;opacity:.3}
+@media(max-width:900px){.sidebar{display:none}.content{margin-left:0}.stats{grid-template-columns:1fr 1fr}.fg2{grid-template-columns:1fr}.main{padding:14px}}
+</style>
+</head>
+<body>
+<div id="loader" style="display:none"><div class="spin"></div><div class="spin-lbl" id="loader-msg">Loading…</div></div>
+
+<div class="conf-ov" id="conf-ov" style="display:none">
+  <div class="conf-box">
+    <div class="conf-title" id="conf-title">Confirm</div>
+    <div class="conf-sub" id="conf-sub">This cannot be undone.</div>
+    <div class="conf-btns">
+      <button class="btn bgh" onclick="$('conf-ov').style.display='none'">Cancel</button>
+      <button class="btn brd" id="conf-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-wrap">
+    <div class="setup-logo">⬡</div>
+    <div class="setup-title">Welcome to Beyond's TMS</div>
+    <div class="setup-sub">One-time setup. <b>Photos never go to JSONBin</b> — only tiny trip metadata (~1KB per trip). Storage stays free forever.</div>
+    <div class="card" style="text-align:left;margin:0 auto 16px">
+      <div class="cb">
+        <div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:13px"><div class="snum">1</div><div class="stxt">Go to <b>jsonbin.io</b> → Sign Up free → Login → <b>API Keys</b> → copy <b>Master Key</b> (starts with <code>$2b$</code>)</div></div>
+        <div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:16px"><div class="snum">2</div><div class="stxt">Paste below + enter your GitHub Pages URL → click <b>Save & Launch</b></div></div>
+        <div class="fg" style="margin-bottom:10px">
+          <span style="font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px">JSONBin Master Key *</span>
+          <input class="sinput" id="setup-key" placeholder="$2b$10$xxxxxxxx…" autocomplete="off" type="password">
+        </div>
+        <div class="fg" style="margin-bottom:10px">
+          <span style="font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px">GitHub Pages Base URL *</span>
+          <input class="sinput" id="setup-url" placeholder="https://yourusername.github.io/beyonds-tms">
+        </div>
+        <button class="btn bp" style="width:100%;justify-content:center;padding:11px;font-size:13px" onclick="doSetup()">Save & Launch →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+<div class="layout">
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="sb-logo"><div class="sb-ico">⬡</div><div><div class="sb-name">Beyond's TMS</div><div class="sb-sub">POD Tracker</div></div></div>
+    <div class="sb-ver">v7.0 · Local Excel Storage</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-gl">Operations</div>
+    <div class="sb-lnk on" data-p="dash" onclick="nav('dash',this)"><span class="sb-lnk-i">▦</span>Dashboard</div>
+    <div class="sb-lnk" data-p="trips" onclick="nav('trips',this)"><span class="sb-lnk-i">⬛</span>All Trips</div>
+    <div class="sb-lnk" data-p="new" onclick="nav('new',this)"><span class="sb-lnk-i">＋</span>New Trip</div>
+    <div class="sb-gl">POD Management</div>
+    <div class="sb-lnk" data-p="pods" onclick="nav('pods',this)"><span class="sb-lnk-i">✦</span>POD Records<span class="sb-bdg amber" id="bdg-pod" style="display:none">0</span></div>
+    <div class="sb-lnk" data-p="inv" onclick="nav('inv',this)"><span class="sb-lnk-i">◈</span>Invoice Tracker<span class="sb-bdg red" id="bdg-late" style="display:none">0</span></div>
+    <div class="sb-gl">System</div>
+    <div class="sb-lnk" data-p="data" onclick="nav('data',this)"><span class="sb-lnk-i">🗄</span>Data Management</div>
+    <div class="sb-lnk" data-p="cfg" onclick="nav('cfg',this)"><span class="sb-lnk-i">⚙</span>Settings</div>
+  </nav>
+  <div class="sb-bot"><div class="sb-user"><div class="sb-av">A</div><div><div class="sb-un">Admin</div><div class="sb-ur">Dispatch Manager</div></div></div></div>
+</aside>
+
+<div class="content">
+<div class="topbar">
+  <div class="tb-l"><div class="tb-title" id="tb-title">Dashboard</div><div class="tb-bc" id="tb-bc">beyonds-tms / dashboard</div></div>
+  <div class="tb-r">
+    <div class="sync-pill"><div class="sdot" id="sdot"></div><span id="slbl">Live</span></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:4px 9px" id="tb-date"></div>
+    <button class="btn bgh bsm" onclick="loadAllTrips(true)">↻ Refresh</button>
+    <button class="btn bp bsm" onclick="nav('new',document.querySelector('[data-p=new]'))">+ New Trip</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dash">
+  <div class="stats" id="stats"></div>
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px">
+    <div class="card">
+      <div class="ch"><div class="ct"><span class="cd"></span>Recent Trips</div><button class="btn bgh bsm" onclick="nav('trips',document.querySelector('[data-p=trips]'))">All →</button></div>
+      <div class="tw"><table><thead><tr><th>ID</th><th>Customer</th><th>Route</th><th>Status</th><th>POD</th><th></th></tr></thead><tbody id="dash-tbody"></tbody></table></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct"><span class="cd" style="background:var(--red)"></span>Late PODs</div></div><div id="late-list"></div></div>
+  </div>
+</div>
+
+<!-- ALL TRIPS -->
+<div class="page" id="page-trips">
+  <div class="fbar">
+    <input id="ts" placeholder="Search trips, customer, rider…" oninput="renderTrips()">
+    <select id="tf" onchange="renderTrips()"><option value="">All Status</option><option>Scheduled</option><option>In Transit</option><option>Delivered</option><option>Closed</option></select>
+    <button class="btn bp bsm" style="margin-left:auto" onclick="nav('new',document.querySelector('[data-p=new]'))">+ New Trip</button>
+  </div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Trip ID</th><th>Customer</th><th>Pickup</th><th>Delivery</th><th>Rider</th><th>Vehicle</th><th>Status</th><th>WhatsApp</th><th>POD</th><th>Del</th></tr></thead><tbody id="trips-tbody"></tbody></table></div></div>
+</div>
+
+<!-- NEW TRIP -->
+<div class="page" id="page-new">
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px">
+    <div>
+      <div class="card"><div class="ch"><div class="ct"><span class="cd"></span>Consignment Details</div></div><div class="cb">
+        <div class="fg2">
+          <div class="fg"><label>Customer Name<span class="req">*</span></label><input id="f-cust" placeholder="Reliance Retail Ltd"></div>
+          <div class="fg"><label>Customer Phone</label><input id="f-cph" placeholder="+91 98000 00000"></div>
+          <div class="fg"><label>Customer Email</label><input id="f-cem" type="email" placeholder="dispatch@company.com"></div>
+          <div class="fg"><label>LR / Consignment No.</label><input id="f-lr" placeholder="LR-2026-0042"></div>
+          <div class="fg"><label>Invoice Number</label><input id="f-inv" placeholder="INV-2026-0099"></div>
+          <div class="fg"><label>Invoice Date</label><input id="f-invdt" type="date"></div>
+          <div class="fg s2"><label>Pickup Address<span class="req">*</span></label><textarea id="f-pu" rows="2" placeholder="Warehouse 4, MIDC, Pune – 411019"></textarea></div>
+          <div class="fg s2"><label>Delivery Address<span class="req">*</span></label><textarea id="f-del" rows="2" placeholder="Plot 12, Industrial Estate, Nashik – 422002"></textarea></div>
+          <div class="fg"><label>Goods Description</label><input id="f-goods" placeholder="Auto Components"></div>
+          <div class="fg"><label>Weight</label><input id="f-wt" placeholder="2.4 Tonnes"></div>
+          <div class="fg"><label>Declared Value (₹)</label><input id="f-val" placeholder="1,20,000"></div>
+          <div class="fg"><label>Freight (₹)</label><input id="f-fr" placeholder="8,500"></div>
+          <div class="fg"><label>Schedule Date</label><input id="f-dt" type="date"></div>
+          <div class="fg"><label>Special Instructions</label><input id="f-notes" placeholder="Handle with care"></div>
+        </div>
+      </div></div>
+      <div class="card"><div class="ch"><div class="ct"><span class="cd"></span>Rider & Vehicle</div></div><div class="cb">
+        <div class="fg2">
+          <div class="fg"><label>Rider Name<span class="req">*</span></label><input id="f-rider" placeholder="Rajan Kumar"></div>
+          <div class="fg"><label>Rider WhatsApp No.<span class="req">*</span></label><input id="f-rph" placeholder="919820134567"></div>
+          <div class="fg"><label>Vehicle Number</label><input id="f-vno" placeholder="MH-12-AB-1234"></div>
+          <div class="fg"><label>Vehicle Type</label><select id="f-vt"><option>Mini Truck (1T)</option><option>Tempo (3T)</option><option>22ft Container (5T)</option><option>32ft Container (10T)</option><option>Flatbed</option></select></div>
+        </div>
+      </div></div>
+    </div>
+    <div>
+      <div class="card"><div class="ch"><div class="ct"><span class="cd" style="background:var(--txt3)"></span>Preview</div></div><div id="preview-body" class="cb" style="color:var(--txt3);text-align:center;font-size:12px;padding:26px">Fill form to preview</div></div>
+      <div class="card" id="result-card" style="display:none"><div class="ch"><div class="ct"><span class="cd" style="background:var(--green)"></span>Trip Created</div></div><div class="cb" id="result-body"></div></div>
+      <button class="btn bp" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="createTrip()">Generate Trip + WhatsApp Link →</button>
+    </div>
+  </div>
+</div>
+
+<!-- POD RECORDS -->
+<div class="page" id="page-pods">
+  <div class="notice bl" style="margin-bottom:16px"><span class="n-ico">💡</span><div class="n-body"><b>Photos are stored in Excel files</b> on the rider's device — not in JSONBin. The table below shows metadata received from the rider. To view actual photos, open the Excel file downloaded at the time of delivery.</div></div>
+  <div class="fbar">
+    <input id="ps" placeholder="Search PODs…" oninput="renderPods()">
+    <select id="pf" onchange="renderPods()"><option value="">All</option><option value="yes">OTP Verified</option><option value="no">Not Verified</option></select>
+    <button class="btn bgld bsm" style="margin-left:auto" onclick="exportPODLog()">📊 Export All PODs to Excel</button>
+  </div>
+  <div class="card"><div class="tw"><table><thead><tr>
+    <th>Trip</th><th>Customer</th><th>Invoice</th><th>Receiver</th><th>OTP</th><th>Pickup📷</th><th>Delivery📷</th><th>Invoice Copy</th><th>GPS</th><th>Completed</th>
+  </tr></thead><tbody id="pods-tbody"></tbody></table></div></div>
+</div>
+
+<!-- INVOICE TRACKER -->
+<div class="page" id="page-inv">
+  <div class="notice am"><span class="n-ico">ℹ</span><span class="n-body">Rows in <b style="color:var(--red)">red</b> = POD received in different month than invoice date.</span></div>
+  <div class="fbar">
+    <input id="is" placeholder="Search invoice, customer…" oninput="renderInv()">
+    <select id="im" onchange="renderInv()"><option value="">All Months</option></select>
+    <select id="ifl" onchange="renderInv()"><option value="">All</option><option value="late">Late Only</option><option value="ok">On Time</option><option value="pend">Pending</option></select>
+  </div>
+  <div class="card"><div class="tw"><table><thead><tr>
+    <th>Invoice #</th><th>Customer</th><th>Trip</th><th>Invoice Date</th><th>POD Date</th><th>Status</th><th>Photos</th><th>Flag</th>
+  </tr></thead><tbody id="inv-tbody"></tbody></table></div></div>
+</div>
+
+<!-- DATA MANAGEMENT -->
+<div class="page" id="page-data">
+  <div style="max-width:580px">
+    <div class="notice gn"><span class="n-ico">✓</span><div class="n-body"><b>Storage is now free:</b> Photos live in Excel files on devices, not in JSONBin. Each trip bin is ~1KB. You can safely delete closed trip bins from JSONBin without losing any POD data (the Excel files are the permanent record).</div></div>
+    <div class="notice bl"><span class="n-ico">💡</span><div class="n-body"><b>How to clear JSONBin space:</b> Go to <b>jsonbin.io → Bins</b> → delete bins named after closed trips (TRP-001, TRP-002 etc.). Keep the <b>bt-config</b> bin — that's your API config.</div></div>
+    <div class="card">
+      <div class="ch"><div class="ct"><span class="cd" style="background:var(--amber)"></span>Remove Individual Trips (local index only)</div></div>
+      <div class="cb">
+        <input id="del-search" placeholder="Search trip ID or customer…" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;font-family:'Inter',sans-serif;font-size:12px;color:var(--txt);outline:none;margin-bottom:10px" oninput="renderDelList()">
+        <div id="del-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)"></div>
+      </div>
+    </div>
+    <div class="danger-zone">
+      <div class="dz-title">⚠ Danger Zone</div>
+      <div class="dz-row"><div><div class="dz-label">Clear Closed Trips</div><div class="dz-sub">Remove closed trips from admin panel index only.</div></div><button class="btn brd bsm" onclick="confirm2('clear-closed','Clear Closed Trips','Remove '+TRIPS.filter(t=>t.status===\'Closed\').length+' closed trips from admin panel? Excel files on devices are unaffected.')">Clear Closed</button></div>
+      <div class="dz-row"><div><div class="dz-label">Clear All Trips</div><div class="dz-sub">Remove all trips from local index. Excel POD files unaffected.</div></div><button class="btn brd bsm" onclick="confirm2('clear-all','Clear All Trips','Remove all '+TRIPS.length+' trips? Cannot be undone.')">Clear All</button></div>
+      <div class="dz-row"><div><div class="dz-label">Factory Reset</div><div class="dz-sub">Clear all local data including API key and settings.</div></div><button class="btn brd bsm" onclick="confirm2('factory-reset','Factory Reset','This clears everything including your API key.')">Reset</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-cfg">
+  <div class="card" style="max-width:480px">
+    <div class="ch"><div class="ct"><span class="cd"></span>Configuration</div></div>
+    <div class="cb">
+      <div class="fg" style="margin-bottom:12px"><label>JSONBin Master Key</label><input id="cfg-key" type="password" placeholder="$2b$10$…"></div>
+      <div class="fg" style="margin-bottom:12px"><label>GitHub Pages URL</label><input id="cfg-url" placeholder="https://yourusername.github.io/beyonds-tms"></div>
+      <div class="fg" style="margin-bottom:14px"><label>Config Bin ID</label><input id="cfg-cbin" readonly style="font-family:'JetBrains Mono',monospace;color:var(--txt3)"></div>
+      <button class="btn bp" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+  <div class="card" style="max-width:480px">
+    <div class="ch"><div class="ct"><span class="cd" style="background:var(--green)"></span>Storage Architecture</div></div>
+    <div class="cb" style="font-size:12px;color:var(--txt2);line-height:1.9">
+      <b style="color:var(--green)">JSONBin stores ONLY:</b> Trip ID, customer, addresses, rider, status, OTP (~1KB per trip). <b>Never</b> photos or signatures.<br>
+      <b style="color:var(--green)">Excel file stores:</b> All photos (base64), signature, invoice copy. Downloaded to rider's phone at trip close.<br>
+      <b style="color:var(--green)">Result:</b> JSONBin free tier (100KB/bin limit) will <b>never fill up</b>. Each bin stays under 2KB.<br>
+      <b style="color:var(--txt3)">To clear JSONBin:</b> Delete closed trip bins from jsonbin.io dashboard. Keep <b>bt-config</b>.
+    </div>
+  </div>
+</div>
+
+</div></div></div></div>
+</div><!-- /main-app -->
+
+<!-- POD MODAL -->
+<div class="mover" id="pod-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal"><div class="mh"><div class="mt" id="pm-title">POD Details</div><button class="mc" onclick="$('pod-modal').style.display='none'">×</button></div><div class="mb" id="pm-body"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const JBIN='https://api.jsonbin.io/v3';
+let CFG={};let TRIPS=[];
+
+window.addEventListener('DOMContentLoaded',()=>{
+  $('tb-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  try{CFG=JSON.parse(localStorage.getItem('bt_cfg')||'{}');}catch(e){CFG={};}
+  if(!CFG.key||!CFG.cfgBin){showSetup();return;}
+  launchApp();
+});
+
+function showSetup(){$('setup-screen').style.display='';$('main-app').style.display='none';}
+
+async function doSetup(){
+  const key=$('setup-key').value.trim();
+  const url=$('setup-url').value.trim().replace(/\/+$/,'');
+  if(!key){toast('Enter JSONBin Master Key','err');return;}
+  if(!url){toast('Enter GitHub Pages URL','err');return;}
+  loader(true,'Testing key & creating config…');
+  try{
+    const res=await fetch(`${JBIN}/b`,{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Name':'bt-config','X-Bin-Private':'false'},body:JSON.stringify({apiKey:key,version:7,note:'Beyond TMS config — do not delete'})});
+    if(!res.ok){const t=await res.text();throw new Error('Key rejected: '+res.status+' '+t);}
+    const j=await res.json();
+    CFG={key,url,cfgBin:j.metadata.id};
+    localStorage.setItem('bt_cfg',JSON.stringify(CFG));
+    localStorage.setItem('bt_index','[]');
+    toast('Setup complete ✓','ok');
+    launchApp();
+  }catch(e){toast('Setup failed: '+e.message,'err');}
+  loader(false);
+}
+
+function launchApp(){
+  $('setup-screen').style.display='none';$('main-app').style.display='';
+  const ck=$('cfg-key'),cu=$('cfg-url'),cb=$('cfg-cbin');
+  if(ck)ck.value=CFG.key||'';if(cu)cu.value=CFG.url||'';if(cb)cb.value=CFG.cfgBin||'';
+  loadAllTrips(false);
+}
+
+async function jbCreate(data,name){
+  const r=await fetch(`${JBIN}/b`,{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':CFG.key,'X-Bin-Name':name||'trip','X-Bin-Private':'false'},body:JSON.stringify(data)});
+  if(!r.ok){const t=await r.text();throw new Error(`Create ${r.status}: ${t}`);}
+  return (await r.json()).metadata.id;
+}
+async function jbRead(binId){
+  const r=await fetch(`${JBIN}/b/${binId}/latest`,{headers:{'X-Master-Key':CFG.key}});
+  if(!r.ok){const t=await r.text();throw new Error(`Read ${r.status}: ${t}`);}
+  return (await r.json()).record;
+}
+
+function getIdx(){try{return JSON.parse(localStorage.getItem('bt_index')||'[]');}catch(e){return[];}}
+function saveIdx(idx){localStorage.setItem('bt_index',JSON.stringify(idx));}
+function addIdx(binId,tripId){const idx=getIdx();idx.unshift({b:binId,t:tripId});saveIdx(idx);}
+
+async function loadAllTrips(showToast=false){
+  const idx=getIdx();
+  if(!idx.length){TRIPS=[];renderDash();setSyncStatus('live');return;}
+  setSyncStatus('wait');loader(true,'Fetching trips…');
+  const results=await Promise.allSettled(idx.map(i=>jbRead(i.b).then(d=>({...d,_bin:i.b}))));
+  TRIPS=results.filter(r=>r.status==='fulfilled').map(r=>r.value);
+  renderDash();updateBadges();setSyncStatus('live');
+  if(showToast)toast('Refreshed — '+TRIPS.length+' trips','ok');
+  loader(false);
+}
+
+const META={dash:{t:'Dashboard',bc:'dashboard'},trips:{t:'All Trips',bc:'trips'},new:{t:'New Trip',bc:'new-trip'},pods:{t:'POD Records',bc:'pods'},inv:{t:'Invoice Tracker',bc:'invoices'},data:{t:'Data Management',bc:'data'},cfg:{t:'Settings',bc:'settings'}};
+function nav(p,el){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.sb-lnk').forEach(x=>x.classList.remove('on'));
+  $('page-'+p).classList.add('on');if(el)el.classList.add('on');
+  const m=META[p]||{};$('tb-title').textContent=m.t||p;$('tb-bc').textContent='beyonds-tms/'+(m.bc||p);
+  const fn={dash:renderDash,trips:renderTrips,pods:renderPods,inv:()=>{fillMonths();renderInv();},data:renderDelList};
+  if(fn[p])fn[p]();window.scrollTo({top:0,behavior:'smooth'});
+}
+
+const $=id=>document.getElementById(id);
+function toast(m,t=''){const e=$('toast');e.textContent=m;e.className='show'+(t?' '+t:'');setTimeout(()=>e.className='',3200);}
+function loader(v,m=''){$('loader').style.display=v?'flex':'none';$('loader-msg').textContent=m;}
+function setSyncStatus(s){const d=$('sdot'),l=$('slbl');d.className='sdot'+(s==='err'?' err':s==='wait'?' wait':'');l.textContent=s==='live'?'Live':s==='wait'?'Syncing…':'Error';}
+function genId(){return 'TRP-'+String(getIdx().length+1).padStart(3,'0');}
+function genOTP(){return String(Math.floor(100000+Math.random()*900000));}
+function fmtD(s){if(!s)return'—';try{return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return s;}}
+function isLate(trip){
+  if(!trip.pod||!trip.pod.completedAt||!trip.invDt)return false;
+  const inv=new Date(trip.invDt);let pod;
+  try{const ds=trip.pod.completedAt.split(',')[0].trim();const pts=ds.split('/');pod=pts.length===3?new Date(`${pts[2]}-${pts[1].padStart(2,'0')}-${pts[0].padStart(2,'0')}`):new Date(ds);}catch(e){return false;}
+  if(isNaN(inv)||isNaN(pod))return false;
+  return pod.getMonth()!==inv.getMonth()||pod.getFullYear()!==inv.getFullYear();
+}
+function sbdg(s){const m={Scheduled:'bb','In Transit':'ba',Delivered:'bg',Closed:'bpu'};return`<span class="bdg ${m[s]||'bgr'}">${s}</span>`;}
+function updateBadges(){
+  const p=TRIPS.filter(t=>t.pod&&t.status!=='Closed').length,l=TRIPS.filter(t=>isLate(t)).length;
+  $('bdg-pod').style.display=p>0?'':'none';$('bdg-pod').textContent=p;
+  $('bdg-late').style.display=l>0?'':'none';$('bdg-late').textContent=l;
+}
+
+function renderDash(){
+  const T=TRIPS,n=T.length,tr=T.filter(x=>x.status==='In Transit').length,
+    del=T.filter(x=>['Delivered','Closed'].includes(x.status)).length,
+    pod=T.filter(x=>x.pod).length,late=T.filter(x=>isLate(x)).length;
+  $('stats').innerHTML=`
+    <div class="sc bl"><div class="sc-l">Total Trips</div><div class="sc-v">${n}</div><div class="sc-s">All time</div><div class="sc-i">⬛</div></div>
+    <div class="sc am"><div class="sc-l">In Transit</div><div class="sc-v">${tr}</div><div class="sc-s">Active</div><div class="sc-i">🚛</div></div>
+    <div class="sc gn"><div class="sc-l">Delivered</div><div class="sc-v">${del}</div><div class="sc-s">${pod} PODs</div><div class="sc-i">✓</div></div>
+    <div class="sc pu"><div class="sc-l">PODs Done</div><div class="sc-v">${pod}</div><div class="sc-s">Metadata synced</div><div class="sc-i">✦</div></div>
+    <div class="sc rd"><div class="sc-l">Late PODs</div><div class="sc-v">${late}</div><div class="sc-s">Cross-month</div><div class="sc-i">⚠</div></div>`;
+  $('dash-tbody').innerHTML=T.slice(0,7).map(t=>`<tr>
+    <td class="mono" style="color:var(--accent2)">${t.id}</td><td>${t.cust}</td>
+    <td style="color:var(--txt2);font-size:11px">${(t.pu||'').substring(0,14)}…→${(t.del||'').substring(0,14)}…</td>
+    <td>${sbdg(t.status)}</td><td>${t.pod?'<span class="bdg bg">✓</span>':'<span class="bdg bgr">—</span>'}</td>
+    <td>${t.status==='Closed'?'<span style="font-size:10px;color:var(--txt3)">🔒 Expired</span>':`<button class="btn bwa bsm" onclick="sendWA('${t._bin}')">📲</button>`}</td>
+  </tr>`).join('')||'<tr><td colspan="6"><div class="empty"><div class="empty-i">⬛</div>No trips yet</div></td></tr>';
+  const lates=T.filter(x=>isLate(x));
+  $('late-list').innerHTML=lates.length?lates.map(t=>`
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:12px;font-weight:600;color:var(--red)">${t.id} · ${t.cust}</div><div style="font-size:10px;color:var(--txt3);margin-top:1px">Inv: ${fmtD(t.invDt)} · POD: ${t.pod?.completedAt?.split(',')[0]||'—'}</div></div>
+      <span class="bdg br">LATE</span></div>`).join('')
+  :'<div class="empty"><div class="empty-i">✓</div>No late PODs</div>';
+  updateBadges();
+}
+
+function renderTrips(){
+  const q=($('ts')?.value||'').toLowerCase(),f=$('tf')?.value||'';
+  const list=TRIPS.filter(t=>(!q||t.id?.toLowerCase().includes(q)||t.cust?.toLowerCase().includes(q)||t.rider?.toLowerCase().includes(q))&&(!f||t.status===f));
+  $('trips-tbody').innerHTML=list.length?list.map(t=>`<tr>
+    <td class="mono" style="color:var(--accent2)">${t.id}</td><td>${t.cust}</td>
+    <td style="font-size:11px;color:var(--txt2)">${(t.pu||'').substring(0,18)}…</td>
+    <td style="font-size:11px;color:var(--txt2)">${(t.del||'').substring(0,18)}…</td>
+    <td>${t.rider}</td><td class="mono" style="font-size:10px">${t.vno||'—'}</td>
+    <td>${sbdg(t.status)}</td>
+    <td>${t.status==='Closed'?'<span style="font-size:10px;color:var(--txt3)">🔒 Expired</span>':`<button class="btn bwa bsm" onclick="sendWA('${t._bin}')">📲 Send</button>`}</td>
+    <td class="brow">${t.pod?`<button class="btn bgh bsm" onclick="viewPOD('${t._bin}')">👁 POD</button>`:'<span style="font-size:10px;color:var(--txt3)">—</span>'}</td>
+    <td><button class="btn brd bsm" onclick="delTrip('${t._bin}','${t.id}')">🗑</button></td>
+  </tr>`).join(''):'<tr><td colspan="10"><div class="empty"><div class="empty-i">⬛</div>No trips</div></td></tr>';
+}
+
+async function createTrip(){
+  const g=id=>$(id)?.value?.trim()||'';
+  const cust=g('f-cust'),pu=g('f-pu'),del=g('f-del'),rider=g('f-rider'),rph=g('f-rph');
+  if(!cust||!pu||!del||!rider||!rph){toast('Fill required fields','err');return;}
+  if(!CFG.key||!CFG.cfgBin){toast('Complete setup first','err');return;}
+  loader(true,'Saving trip to cloud…');
+  try{
+    // Only trip metadata — no photos ever go to JSONBin
+    const trip={id:genId(),cust,cph:g('f-cph'),cem:g('f-cem'),lr:g('f-lr'),inv:g('f-inv'),invDt:g('f-invdt'),pu,del,goods:g('f-goods'),wt:g('f-wt'),val:g('f-val'),fr:g('f-fr'),dt:g('f-dt'),notes:g('f-notes'),rider,rph:rph.replace(/\D/g,''),vno:g('f-vno'),vt:g('f-vt'),status:'Scheduled',otp:genOTP(),created:new Date().toISOString().split('T')[0]};
+    const tripBin=await jbCreate(trip,trip.id);
+    trip._bin=tripBin;TRIPS.unshift(trip);addIdx(tripBin,trip.id);
+    showResult(trip,tripBin);toast('Trip created ✓','ok');
+  }catch(e){toast('Failed: '+e.message,'err');}
+  loader(false);
+}
+
+function riderUrl(tripBin){
+  const base=(CFG.url||window.location.href.replace(/admin\.html.*/,'')).replace(/\/+$/,'');
+  // Pass key as base64 in URL — rider reads it directly, no config-bin fetch
+  const k=btoa(unescape(encodeURIComponent(CFG.key||'')));
+  return `${base}/pod.html?trip=${tripBin}&k=${encodeURIComponent(k)}`;
+}
+
+function showResult(trip,tripBin){
+  const url=riderUrl(tripBin),wn=trip.rph.replace(/\D/g,'');
+  const msg=encodeURIComponent(`⬡ *Beyond's TMS — Trip Assignment*\n\nHello ${trip.rider} 👋\n\nNew delivery:\n▸ *Trip:* ${trip.id}\n▸ *Customer:* ${trip.cust}\n▸ *Goods:* ${trip.goods||'—'} | ${trip.wt||'—'}\n▸ *Pickup:* ${trip.pu}\n▸ *Delivery:* ${trip.del}\n${trip.inv?'▸ *Invoice:* '+trip.inv+'\n':''}▸ *Date:* ${trip.dt||'—'}\n${trip.notes?'▸ *Notes:* '+trip.notes+'\n':''}\n━━━━━━━━━\n👉 *Open Trip Portal:*\n${url}\n\n_Beyond's TMS_`);
+  $('result-card').style.display='';
+  $('result-body').innerHTML=`<div class="rbox">
+    <div style="font-size:11px;color:var(--txt2);margin-bottom:9px">Trip <span class="mono" style="color:var(--accent2)">${trip.id}</span> created (~1KB in cloud)</div>
+    <div class="wabox"><div style="font-size:9px;font-weight:600;color:#4ade80;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">Rider Portal Link</div><div class="wa-url">${url}</div></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">
+      <a href="https://wa.me/${wn}?text=${msg}" target="_blank" class="btn bwa">📲 Open WhatsApp</a>
+      <button class="btn bgh" onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Copied!','ok'))">📋 Copy</button>
+    </div>
+    <div style="margin-top:10px;padding:8px 11px;background:var(--abg);border:1px solid var(--abdr);border-radius:6px;display:flex;align-items:center;gap:9px">
+      <span style="font-size:10px;color:var(--txt3);text-transform:uppercase">Delivery OTP</span>
+      <span class="otp-chip">${trip.otp}</span>
+    </div>
+  </div>`;
+}
+
+function livePreview(){
+  const g=id=>$(id)?.value?.trim()||'';const c=g('f-cust');
+  if(!c){$('preview-body').innerHTML='<div style="color:var(--txt3);font-size:12px;text-align:center;padding:26px">Fill form to preview</div>';return;}
+  const rows=[['Customer',c],['Invoice',g('f-inv')],['LR',g('f-lr')],['Pickup',g('f-pu')],['Delivery',g('f-del')],['Goods',g('f-goods')],['Rider',g('f-rider')]].filter(x=>x[1]);
+  $('preview-body').innerHTML=`<div style="padding:0">${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--txt3);font-size:10px;text-transform:uppercase">${k}</span><span style="color:var(--txt);font-weight:500;text-align:right;max-width:60%">${v}</span></div>`).join('')}</div>`;
+}
+document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('#page-new input,#page-new select,#page-new textarea').forEach(el=>el.addEventListener('input',livePreview));});
+
+function sendWA(tripBin){
+  const t=TRIPS.find(x=>x._bin===tripBin);if(!t)return;
+  if(t.status==='Closed'){toast('Trip closed — link expired','err');return;}
+  const url=riderUrl(tripBin);
+  const msg=encodeURIComponent(`⬡ *Beyond's TMS — Trip ${t.id}*\nHi ${t.rider},\n▸ Pickup: ${t.pu}\n▸ Delivery: ${t.del}\n\n👉 Open:\n${url}\n\n_Tap to complete POD_`);
+  window.open(`https://wa.me/${t.rph}?text=${msg}`,'_blank');
+}
+
+function saveSettings(){
+  const k=$('cfg-key')?.value.trim(),u=$('cfg-url')?.value.trim().replace(/\/+$/,'');
+  if(k)CFG.key=k;if(u)CFG.url=u;localStorage.setItem('bt_cfg',JSON.stringify(CFG));toast('Settings saved','ok');
+}
+
+// ── POD RECORDS (metadata only) ──
+function renderPods(){
+  const q=($('ps')?.value||'').toLowerCase(),f=$('pf')?.value||'';
+  const list=TRIPS.filter(t=>{
+    if(!t.pod)return false;
+    if(f==='yes'&&!t.pod.otpVerified)return false;
+    if(f==='no'&&t.pod.otpVerified)return false;
+    if(q&&!t.id?.toLowerCase().includes(q)&&!t.cust?.toLowerCase().includes(q))return false;
+    return true;
+  });
+  $('pods-tbody').innerHTML=list.length?list.map(t=>{const p=t.pod;return`<tr>
+    <td class="mono" style="color:var(--accent2)">${t.id}</td><td>${t.cust}</td>
+    <td class="mono" style="font-size:10px">${t.inv||'—'}</td>
+    <td>${p.receiver||'—'}<br><span style="font-size:10px;color:var(--txt3)">${p.recPhone||''}</span></td>
+    <td>${p.otpVerified?'<span class="bdg bg">✓ Yes</span>':'<span class="bdg bgr">No</span>'}</td>
+    <td style="font-size:12px">${p.pickupPhotoCount||0} 📷</td>
+    <td style="font-size:12px">${p.deliveryPhotoCount||0} 📷</td>
+    <td>${p.invoiceUploaded?'<span class="bdg bg">✓</span>':'<span class="bdg bgr">—</span>'}</td>
+    <td style="font-size:10px;color:var(--txt2);font-family:monospace">${p.location||'—'}</td>
+    <td style="font-size:10px;color:var(--txt2)">${p.completedAt||'—'}</td>
+  </tr>`;}).join(''):'<tr><td colspan="10"><div class="empty"><div class="empty-i">✦</div>No PODs yet</div></td></tr>';
+}
+
+// ── EXPORT ALL PODs TO EXCEL ──
+function exportPODLog(){
+  const pods=TRIPS.filter(t=>t.pod);
+  if(!pods.length){toast('No PODs to export','err');return;}
+  const wb=XLSX.utils.book_new();
+  const rows=[
+    ["Beyond's TMS — POD Log Export"],
+    ['Generated: '+new Date().toLocaleString('en-IN')],
+    [''],
+    ['Trip ID','Customer','Invoice #','Invoice Date','LR No','Pickup','Delivery','Rider','Vehicle','Receiver','Receiver Phone','OTP Verified','GPS Location','Pickup Photos','Delivery Photos','Invoice Uploaded','Trip Started','POD Completed','Remarks','Status','Late POD']
+  ];
+  pods.forEach(t=>{
+    const p=t.pod;
+    rows.push([
+      t.id,t.cust,t.inv||'',t.invDt||'',t.lr||'',t.pu,t.del,t.rider,t.vno||'',
+      p.receiver||'',p.recPhone||'',p.otpVerified?'YES':'NO',p.location||'',
+      p.pickupPhotoCount||0,p.deliveryPhotoCount||0,p.invoiceUploaded?'YES':'NO',
+      p.startedAt||'',p.completedAt||'',p.remarks||'',t.status,isLate(t)?'YES':'NO'
+    ]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:10},{wch:22},{wch:16},{wch:13},{wch:12},{wch:28},{wch:28},{wch:16},{wch:14},{wch:18},{wch:14},{wch:12},{wch:22},{wch:8},{wch:8},{wch:10},{wch:22},{wch:22},{wch:24},{wch:10},{wch:8}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:20}},{s:{r:1,c:0},e:{r:1,c:20}}];
+  XLSX.utils.book_append_sheet(wb,ws,'POD Log');
+  XLSX.writeFile(wb,'BeyondsTMS_POD_Log_'+new Date().toISOString().split('T')[0]+'.xlsx');
+  toast('POD log exported to Excel','ok');
+}
+
+// ── VIEW POD (metadata) ──
+function viewPOD(tripBin){
+  const t=TRIPS.find(x=>x._bin===tripBin);if(!t||!t.pod){toast('No POD','err');return;}
+  const p=t.pod;
+  $('pm-title').textContent=t.id+' — '+t.cust;
+  $('pm-body').innerHTML=`
+    ${isLate(t)?`<div style="background:var(--rbg);border:1px solid var(--rbdr);border-radius:var(--r);padding:10px 13px;font-size:12px;margin-bottom:13px;color:var(--red)">⚠ Late POD: Invoice ${fmtD(t.invDt)} — POD in different month</div>`:''}
+    <div class="pm-grid">
+      ${[['Receiver',p.receiver],['Phone',p.recPhone],['OTP Verified',p.otpVerified?'✓ YES':'NO'],['Invoice',t.inv||'—'],['Invoice Date',fmtD(t.invDt)],['Completed',p.completedAt||'—'],['GPS Location',p.location||'—'],['Remarks',p.remarks||'—'],['Pickup Photos',String(p.pickupPhotoCount||0)+' (in Excel file)'],['Delivery Photos',String(p.deliveryPhotoCount||0)+' (in Excel file)'],['Invoice Copy',p.invoiceUploaded?'✓ Uploaded (in Excel)':'Not uploaded'],['Trip Started',p.startedAt||'—']].map(([k,v])=>`<div class="pm-cell"><div class="pm-k">${k}</div><div class="pm-v">${v}</div></div>`).join('')}
+    </div>
+    <div class="notice bl"><span class="n-ico">📊</span><div class="n-body">Photos, signature, and invoice copy are in the <b>Excel file downloaded by the rider</b> at trip close. Ask the rider to share the Excel file: <b>POD_${t.id}_*.xlsx</b></div></div>`;
+  $('pod-modal').style.display='flex';
+}
+
+// ── INVOICE TRACKER ──
+function fillMonths(){
+  const m=new Set(TRIPS.filter(t=>t.invDt).map(t=>t.invDt.substring(0,7)));
+  const sel=$('im');if(!sel)return;
+  sel.innerHTML='<option value="">All Months</option>'+Array.from(m).sort().reverse().map(v=>{const d=new Date(v+'-01');return`<option value="${v}">${d.toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</option>`;}).join('');
+}
+function renderInv(){
+  const q=($('is')?.value||'').toLowerCase(),mf=$('im')?.value||'',ff=$('ifl')?.value||'';
+  const list=TRIPS.filter(t=>{
+    if(q&&!t.inv?.toLowerCase().includes(q)&&!t.cust?.toLowerCase().includes(q))return false;
+    if(mf&&t.invDt?.substring(0,7)!==mf)return false;
+    const late=isLate(t);
+    if(ff==='late'&&!late)return false;if(ff==='ok'&&(late||!t.pod))return false;if(ff==='pend'&&t.pod)return false;return true;
+  });
+  $('inv-tbody').innerHTML=list.length?list.map(t=>{
+    const late=isLate(t);
+    return`<tr class="${late?'lat':''}">
+      <td class="mono" style="color:${late?'var(--red)':'var(--accent2)'};font-size:11px">${t.inv||'—'}${late?'<span class="late-tag">▲ LATE</span>':''}</td>
+      <td>${t.cust}</td><td class="mono" style="font-size:10px;color:var(--txt2)">${t.id}</td>
+      <td style="font-size:12px">${fmtD(t.invDt)}</td>
+      <td style="font-size:12px;${late?'color:var(--red);font-weight:600':''}">${t.pod?t.pod.completedAt?.split(',')[0]||'—':'—'}</td>
+      <td>${t.pod?'<span class="bdg bg">Received</span>':'<span class="bdg ba">Pending</span>'}</td>
+      <td style="font-size:11px;color:var(--txt2)">${t.pod?(t.pod.deliveryPhotoCount||0)+' del 📷':'-'}</td>
+      <td>${late?'<span class="bdg br">⚠ Cross-Month</span>':t.pod?'<span class="bdg bg">✓ OK</span>':'<span class="bdg bgr">Awaiting</span>'}</td>
+    </tr>`;}).join(''):'<tr><td colspan="8"><div class="empty"><div class="empty-i">◈</div>No invoices</div></td></tr>';
+}
+
+// ── DATA MANAGEMENT ──
+function renderDelList(){
+  const q=($('del-search')?.value||'').toLowerCase();
+  const list=TRIPS.filter(t=>!q||t.id?.toLowerCase().includes(q)||t.cust?.toLowerCase().includes(q));
+  $('del-list').innerHTML=list.length?list.map(t=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border)">
+      <div><span class="mono" style="color:var(--accent2);font-size:11px">${t.id}</span> <span style="font-size:12px;color:var(--txt);margin-left:7px">${t.cust}</span> ${sbdg(t.status)}${t.pod?'<span class="bdg bg" style="margin-left:3px">POD</span>':''}</div>
+      <button class="btn brd bsm" onclick="delTrip('${t._bin}','${t.id}')">🗑</button>
+    </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--txt3);font-size:12px">No trips</div>';
+}
+function confirm2(action,title,sub){
+  $('conf-title').textContent=title;$('conf-sub').textContent=sub;$('conf-ov').style.display='flex';
+  $('conf-ok').onclick=()=>{execAction(action);$('conf-ov').style.display='none';};
+}
+function execAction(a){
+  if(a==='clear-closed'){const keep=getIdx().filter(i=>TRIPS.find(t=>t._bin===i.b&&t.status!=='Closed'));TRIPS=TRIPS.filter(t=>t.status!=='Closed');saveIdx(keep);toast('Closed trips cleared','ok');}
+  else if(a==='clear-all'){TRIPS=[];saveIdx([]);toast('All trips cleared','ok');}
+  else if(a==='factory-reset'){localStorage.clear();location.reload();return;}
+  renderDash();renderDelList();updateBadges();
+}
+function delTrip(tripBin,tripId){
+  confirm2('del','Delete '+tripId,'Remove from admin panel local index only. JSONBin bin and Excel files are unaffected.');
+  $('conf-ok').onclick=()=>{
+    TRIPS=TRIPS.filter(t=>t._bin!==tripBin);saveIdx(getIdx().filter(i=>i.b!==tripBin));
+    $('conf-ov').style.display='none';renderTrips();renderDelList();renderDash();updateBadges();toast(tripId+' removed','ok');
+  };
+}
+</script>
+</body>
+</html>
