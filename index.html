@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0; url=admin.html">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beyond's TMS — Redirecting…</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0a0f;
+    color: #e8e8f0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .logo {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, #5865f2, #7c3aed);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin-bottom: 8px;
+  }
+  h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+  p { font-size: 13px; color: #555570; }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid #252535;
+    border-top-color: #5865f2;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  a { color: #7983f5; font-size: 13px; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <div class="logo">⬡</div>
+  <h1>Beyond's TMS & POD Tracker</h1>
+  <div class="spinner"></div>
+  <p>Redirecting to Admin Panel…</p>
+  <a href="admin.html">Click here if not redirected</a>
+  <script>window.location.replace('admin.html');</script>
+</body>
+</html>
